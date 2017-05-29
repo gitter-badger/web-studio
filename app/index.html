@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0">
+
+    <title>Web Studio</title>
+
+    <style>
+      body {
+        -webkit-backface-visibility: hidden;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        text-rendering: optimizeLegibility;
+        box-sizing: border-box;
+      }
+      @media (min-resolution: 2dppx) {
+        * {
+          text-rendering: geometricPrecision;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    
+    <script>start = performance.now();</script>
+    <script src="/dist/bundle.js"></script>
+    <script>console.log('init web sudio in total time:', performance.now() - start);</script>
+  </body>
+</html>

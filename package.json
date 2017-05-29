@@ -1,0 +1,32 @@
+{
+	"name": "web-studio",
+	"version": "0.0.1",
+	"description": "~",
+	"repository": "ije/web-studio",
+	"license": "MIT",
+	"author": {
+		"name": "studio X",
+		"url": "http://x-stud.io"
+	},
+	"scripts": {
+		"start": "cross-env NODE_ENV=development electron ./app",
+		"build": "cross-env NODE_ENV=production webpack --progress --hide-modules",
+		"webpack-dev-server": "cross-env NODE_ENV=development webpack-dev-server --open --hot"
+	},
+	"dependencies": {
+		"vue": "^2.2.1"
+	},
+	"devDependencies": {
+		"electron": "^1.6.8",
+		"babel-core": "^6.0.0",
+		"babel-loader": "^6.0.0",
+		"babel-preset-latest": "^6.0.0",
+		"cross-env": "^3.0.0",
+		"css-loader": "^0.25.0",
+		"file-loader": "^0.9.0",
+		"vue-loader": "^11.1.4",
+		"vue-template-compiler": "^2.2.1",
+		"webpack": "^2.2.0",
+		"webpack-dev-server": "^2.2.0"
+	}
+}

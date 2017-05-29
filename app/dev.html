@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0">
+    <title>Web Studio(development)</title>
+  </head>
+
+  <body>
+    <p>wating the webpack-dev-server...</p>
+    
+    <script>
+      const {ipcRenderer} = require('electron')
+      const path = require('path')
+
+      ipcRenderer.on('dev-server-addr', (e, addr) => {
+        if (addr === null) {
+          setTimeout(() => {
+             ipcRenderer.send('dev-server-status')
+          }, 100)
+        }
+        location.href = path.join(addr, 'app')
+      })
+      ipcRenderer.send('dev-server-status')
+    </script>
+  </body>
+</html>
