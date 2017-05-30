@@ -1,4 +1,11 @@
 {
-	"name": "Web Studio",
-	"version": "0.0.1"
+	"name": "web-studio",
+	"version": "0.0.1",
+	"repository": "http://github.com/ije/web-studio",
+	"license": "MIT",
+	"author": {
+		"name": "studio X",
+		"url": "http://x-stud.io"
+	},
+	"dependencies": {}
 }

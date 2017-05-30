@@ -1,12 +1,15 @@
 const {app, BrowserWindow, ipcMain, Menu, shell} = require('electron')
 const path = require('path')
 const fs = require('fs')
-const htmlpdf = require('./htmlpdf')
-const menuList = require('./menu')
 const dev = require('./dev')
+const menuList = require('./menu')
+const htmlpdf = require('./htmlpdf')
 
-global.mainWindow = null
-global.isDev = process.defaultApp || /[\\/]electron-prebuilt[\\/]/.test(process.execPath) || /[\\/]electron[\\/]/.test(process.execPath)
+global.env = {
+  isDev: process.defaultApp || /[\\/]electron-prebuilt[\\/]/.test(process.execPath) || /[\\/]electron[\\/]/.test(process.execPath)
+}
+
+let mainWindow = null
 
 app.on('ready', () => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuList))
@@ -17,7 +20,7 @@ app.on('ready', () => {
     })
   })
 
-  if (isDev) {
+  if (env.isDev) {
     dev.start()
     ipcMain.on('dev-server-status', (e) => {
       e.sender.send('dev-server-addr', dev.addr())
@@ -29,7 +32,9 @@ app.on('ready', () => {
 
 // On macOS it's common to re-create a window in the app when the dock icon is clicked and there are no other windows open.
 app.on('activate', () => {
-  createMainWindow()
+  if (mainWindow === null) {
+    createMainWindow()
+  }
 })
 
 app.on('window-all-closed', () => {
@@ -42,16 +47,27 @@ app.on('before-quit', function () {
   dev.stop()
 })
 
+app.on('open-file', (e, path) => {
+
+})
+
 function createMainWindow () {
-  global.mainWindow = createWindow({
-    saveState: 'main',
-    // titleBarStyle: 'hidden-inset',
-    // frame: process.platform === 'darwin',
-    url: `file://${path.resolve(__dirname, isDev ? 'dev' : 'index')}.html` 
+  mainWindow = createWindow(`file://${path.resolve(__dirname, (env.isDev ? 'dev' : 'index') + '.html')}`, {
+    minWidth: 800,
+    minHeight: 400,
+    titleBarStyle: 'hidden-inset',
+    frame: process.platform === 'darwin',
+    transparent: process.platform === 'darwin',
+    backgroundColor: '#fff',
+    acceptFirstMouse: true,
+    saveState: 'main'
+  })
+  mainWindow.on('closed', () => {
+    mainWindow = null
   })
 }
 
-function createWindow (options) {
+function createWindow (url, options) {
   if (typeof options !== 'object' || options === null) {
     options = {}
   }
@@ -70,18 +86,19 @@ function createWindow (options) {
     } catch (e) {}
   }
 
+  if (typeof options.minWidth === 'number' && options.width < options.minWidth) {
+    options.width = options.minWidth
+  }
+  if (typeof options.minHeight === 'number' && options.height < options.minHeight) {
+    options.height = options.minHeight
+  }
+
   let win = new BrowserWindow(options)
-  win.loadURL(options.url)
+  win.loadURL(url)
 
   if (stateSavePath === null) {
     return win
   }
-
-  win.on('closed', () => {
-    try {
-      fs.writeFileSync(stateSavePath, JSON.stringify(state))
-    } catch (e) {}
-  })
 
   win.on('resize', () => {
     var size = win.getSize()
@@ -111,6 +128,12 @@ function createWindow (options) {
 
   win.on('leave-full-screen', () => {
     state.fullscreen = false
+  })
+
+  win.on('closed', () => {
+    try {
+      fs.writeFileSync(stateSavePath, JSON.stringify(state))
+    } catch (e) {}
   })
 
   return win

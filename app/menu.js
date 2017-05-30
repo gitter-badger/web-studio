@@ -1,7 +1,13 @@
 const {app, shell} = require('electron')
 const path = require('path')
+const appVersion = app.getVersion()
 
 let menuList = [
+  {
+    label: 'File',
+    submenu: [
+    ]
+  },
   {
     label: 'Edit',
     submenu: [
@@ -91,7 +97,7 @@ let menuList = [
 
 -
 
-${app.getName()} ${app.getVersion()}
+Web Studio ${appVersion}
 Electron ${process.versions.electron}
 ${process.platform} ${process.arch} ${os.release()}`
 
@@ -104,10 +110,11 @@ ${process.platform} ${process.arch} ${os.release()}`
 
 if (process.platform === 'darwin') {
   menuList.unshift({
-    label: app.getName(),
+    label: 'Web Studio',
     submenu: [
       {
-        role: 'about'
+        role: 'about',
+        label: 'About Web Studio'
       },
       {
         type: 'separator'
@@ -120,7 +127,8 @@ if (process.platform === 'darwin') {
         type: 'separator'
       },
       {
-        role: 'hide'
+        role: 'hide',
+        label: 'Hide Web Studio'
       },
       {
         role: 'hideothers'
@@ -132,7 +140,8 @@ if (process.platform === 'darwin') {
         type: 'separator'
       },
       {
-        role: 'quit'
+        role: 'quit',
+        label: 'Quit Web Studio'
       }
     ]
   })
@@ -154,21 +163,16 @@ if (process.platform === 'darwin') {
     }
   ]
 } else {
-  menuList.unshift({
-    label: 'File',
-    submenu: [
-      {
-        role: 'quit'
-      }
-    ]
+  menuList[0].submenu.push({
+    role: 'quit'
   })
 
   menuList[4].submenu.push({
     role: 'about',
     click () {
       dialog.showMessageBox({
-        title: `About ${app.getName()}`,
-        message: `${app.getName()} ${app.getVersion()}`,
+        title: `About Web Studio`,
+        message: `Web Studio ${appVersion}`,
         detail: 'Created by studio X',
         icon: path.join(__dirname, 'static/icon.png'),
         buttons: []
