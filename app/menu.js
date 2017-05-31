@@ -1,4 +1,5 @@
 const {app, shell} = require('electron')
+const os = require('os')
 const path = require('path')
 const appVersion = app.getVersion()
 
@@ -84,24 +85,29 @@ let menuList = [
     role: 'help',
     submenu: [
       {
-        label: 'Created by studio X',
-        click () {
-          shell.openExternal('http://x-stud.io')
-        }
-      },
-      {
         label: 'Report an Issue...',
         click () {
           const body = `
 <!-- Please succinctly describe your issue and steps to reproduce it. -->
 
--
 
-Web Studio ${appVersion}
-Electron ${process.versions.electron}
-${process.platform} ${process.arch} ${os.release()}`
+--
+Web Studio ${appVersion} with Electron ${process.versions.electron}
+System ${process.platform} ${process.arch} ${os.release()}`
 
           shell.openExternal(`https://github.com/ije/web-studio/issues/new?body=${encodeURIComponent(body)}`)
+        }
+      },
+      {
+        label: 'Web Studio Website',
+        click () {
+          shell.openExternal('http://web-stud.io')
+        }
+      },
+      {
+        label: 'Created by studio X',
+        click () {
+          shell.openExternal('http://x-stud.io')
         }
       }
     ]
