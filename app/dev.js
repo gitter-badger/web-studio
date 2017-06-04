@@ -1,18 +1,17 @@
 const {spawn} = require('child_process')
 const path = require('path')
-const pathListSeparator = process.platform === 'win32' ? ';' : ':'
 const localNodeBinPath = path.resolve(__dirname, '../node_modules/.bin')
 
 let wdsProcess = null
 let wdsAddr = null
 
 function start () {
-  let output = ''
   console.log('start webpack-dev-server process...')
   wdsProcess = spawn('webpack-dev-server', ['--hot'], {
-    'PATH': `${localNodeBinPath}${pathListSeparator}${process.env.PATH}`,
+    'PATH': `${localNodeBinPath}${path.delimiter}${process.env.PATH}`,
     'NODE_ENV': 'development'
   })
+  let output = ''
   wdsProcess.stdout.on('data', (data) => {
     data = String(data)
     if (wdsAddr === null) {

@@ -1,93 +1,162 @@
-const {app, shell} = require('electron')
+const {app, Menu, shell, dialog} = require('electron')
 const os = require('os')
 const path = require('path')
+const _ = require('lodash')
+const storage = require('./storage')
+const editor = require('./editor')
+const utils = require('./x/utils')
 const appVersion = app.getVersion()
 
-let menuList = [
-  {
-    label: 'File',
-    submenu: [
-    ]
-  },
-  {
-    label: 'Edit',
-    submenu: [
-      {
-        role: 'undo'
-      },
-      {
-        role: 'redo'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'cut'
-      },
-      {
-        role: 'copy'
-      },
-      {
-        role: 'paste'
-      },
-      {
-        role: 'pasteandmatchstyle'
-      },
-      {
-        role: 'delete'
-      },
-      {
-        role: 'selectall'
+let recentFiles = []
+let recentFilesMenu = {
+  label: 'Open Recent',
+  submenu: null
+}
+
+let fileMenu = {
+  label: 'File',
+  submenu: [
+    {
+      label: 'New Project',
+      click () {
+        editor.open()
       }
-    ]
-  },
-  {
-    label: 'View',
-    submenu: [
-      {
-        role: 'reload'
-      },
-      {
-        role: 'toggledevtools'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'resetzoom'
-      },
-      {
-        role: 'zoomin'
-      },
-      {
-        role: 'zoomout'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'togglefullscreen'
+    },
+    {
+      label: 'Open Project...',
+      click () {
+        dialog.showOpenDialog({
+          multiSelections: false,
+          filters: [
+            {name: 'Web Studio Project Document', extensions: ['ws']},
+            {name: 'All Files', extensions: ['*']}
+          ]
+        }, function (filePaths) {
+          if (utils.isNEArray(filePaths)) {
+            editor.open(filePaths[0])
+          }
+        })
       }
-    ]
-  },
-  {
-    role: 'window',
-    submenu: [
-      {
-        role: 'minimize'
-      },
-      {
-        role: 'close'
+    },
+    recentFilesMenu,
+    {
+      label: 'Save',
+      click () {
+        editor.save()
       }
-    ]
-  },
-  {
-    role: 'help',
-    submenu: [
-      {
-        label: 'Report an Issue...',
-        click () {
-          const body = `
+    },
+    {
+      label: 'Save As...',
+      click () {
+        editor.save(true)
+      }
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Export...',
+      click () {
+        editor.export()
+      }
+    },
+    {
+      label: 'Import...',
+      click () {
+        editor.import()
+      }
+    },
+    {
+      label: 'Press...',
+      click () {
+        editor.press()
+      }
+    }
+  ]
+}
+
+let editMenu = {
+  label: 'Edit',
+  submenu: [
+    {
+      role: 'undo'
+    },
+    {
+      role: 'redo'
+    },
+    {
+      type: 'separator'
+    },
+    {
+      role: 'cut'
+    },
+    {
+      role: 'copy'
+    },
+    {
+      role: 'paste'
+    },
+    {
+      role: 'pasteandmatchstyle'
+    },
+    {
+      role: 'delete'
+    },
+    {
+      role: 'selectall'
+    }
+  ]
+}
+
+let viewMenu = {
+  label: 'View',
+  submenu: [
+    {
+      role: 'reload'
+    },
+    {
+      role: 'toggledevtools'
+    },
+    {
+      type: 'separator'
+    },
+    {
+      role: 'resetzoom'
+    },
+    {
+      role: 'zoomin'
+    },
+    {
+      role: 'zoomout'
+    },
+    {
+      type: 'separator'
+    },
+    {
+      role: 'togglefullscreen'
+    }
+  ]
+}
+
+let windowMenu = {
+  role: 'window',
+  submenu: [
+    {
+      role: 'minimize'
+    },
+    {
+      role: 'close'
+    }
+  ]
+}
+
+let helpMenu = {
+  role: 'help',
+  submenu: [
+    {
+      label: 'Report an Issue...',
+      click () {
+        const body = `
 <!-- Please succinctly describe your issue and steps to reproduce it. -->
 
 
@@ -95,63 +164,71 @@ let menuList = [
 Web Studio ${appVersion} with Electron ${process.versions.electron}
 System ${process.platform} ${process.arch} ${os.release()}`
 
-          shell.openExternal(`https://github.com/ije/web-studio/issues/new?body=${encodeURIComponent(body)}`)
-        }
-      },
-      {
-        label: 'Web Studio Website',
-        click () {
-          shell.openExternal('http://web-stud.io')
-        }
-      },
-      {
-        label: 'Created by studio X',
-        click () {
-          shell.openExternal('http://x-stud.io')
-        }
+        shell.openExternal(`https://github.com/ije/web-studio/issues/new?body=${encodeURIComponent(body)}`)
       }
-    ]
-  }
+    },
+    {
+      label: 'Web Studio Website',
+      click () {
+        shell.openExternal('http://ws.x-stud.io')
+      }
+    },
+    {
+      label: 'Created by studio X',
+      click () {
+        shell.openExternal('http://x-stud.io')
+      }
+    }
+  ]
+}
+
+let macAppMenu = {
+  label: 'Web Studio',
+  submenu: [
+    {
+      role: 'about',
+      label: 'About Web Studio'
+    },
+    {
+      type: 'separator'
+    },
+    {
+      role: 'services',
+      submenu: []
+    },
+    {
+      type: 'separator'
+    },
+    {
+      role: 'hide',
+      label: 'Hide Web Studio'
+    },
+    {
+      role: 'hideothers'
+    },
+    {
+      role: 'unhide'
+    },
+    {
+      type: 'separator'
+    },
+    {
+      role: 'quit',
+      label: 'Quit Web Studio'
+    }
+  ]
+}
+
+let appMenuList = [
+  fileMenu,
+  editMenu,
+  viewMenu,
+  windowMenu,
+  helpMenu
 ]
 
 if (process.platform === 'darwin') {
-  menuList.unshift({
-    label: 'Web Studio',
-    submenu: [
-      {
-        role: 'about',
-        label: 'About Web Studio'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'services',
-        submenu: []
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'hide',
-        label: 'Hide Web Studio'
-      },
-      {
-        role: 'hideothers'
-      },
-      {
-        role: 'unhide'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'quit',
-        label: 'Quit Web Studio'
-      }
-    ]
-  })
-  menuList[3].submenu = [
+  windowMenu.submenu = [
     {
       role: 'close'
     },
@@ -168,12 +245,14 @@ if (process.platform === 'darwin') {
       role: 'front'
     }
   ]
+
+  appMenuList.unshift(macAppMenu)
 } else {
-  menuList[0].submenu.push({
+  fileMenu.submenu.push({
     role: 'quit'
   })
 
-  menuList[4].submenu.push({
+  helpMenu.submenu.push({
     role: 'about',
     click () {
       dialog.showMessageBox({
@@ -187,4 +266,89 @@ if (process.platform === 'darwin') {
   })
 }
 
-module.exports = menuList
+function install () {
+  updateRecentFilesMenu()
+  Menu.setApplicationMenu(Menu.buildFromTemplate(appMenuList))
+}
+
+// function update (handle) {
+//   if (typeof handle === 'function') {
+//     handle(appMenuList)
+//   }
+//   install()
+// }
+
+function addRecentFile (path) {
+  let tmp = [path]
+  _.each(recentFiles, (fp) => {
+    if (fp !== path) {
+      tmp.push(fp)
+    }
+  })
+  recentFiles = tmp
+  storage.set('recentFiles', recentFiles)
+  install()
+}
+
+function removeRecentFile (path) {
+  let tmp = []
+  _.each(recentFiles, (fp) => {
+    if (fp !== path) {
+      tmp.push(fp)
+    }
+  })
+  recentFiles = tmp
+  storage.set('recentFiles', recentFiles)
+  install()
+}
+
+function clearRecentFiles () {
+  recentFiles = []
+  storage.set('recentFiles', recentFiles)
+  install()
+}
+
+function updateRecentFilesMenu () {
+  let submenu = []
+  _.each(recentFiles, (fp) => {
+    submenu.push({
+      label: path.basename(fp),
+      path: fp,
+      click (item) {
+        editor.open(item.path)
+      }
+    })
+  })
+
+  if (submenu.length == 0) {
+    recentFilesMenu.enabled = false
+    recentFilesMenu.submenu = null
+    return
+  }
+
+  submenu.push({
+    type: 'separator'
+  })
+  submenu.push({
+    label: 'Clear Recent',
+    click () {
+      clearRecentFiles()
+    }
+  })
+  recentFilesMenu.enabled = true
+  recentFilesMenu.submenu = submenu
+}
+
+module.exports = {
+  install: () => {
+    _.each(storage.get('recentFiles'), (value) => {
+      if (utils.isNEString(value)) {
+        recentFiles.push(value)
+      }
+    })
+    install()
+  },
+  addRecentFile,
+  removeRecentFile,
+  clearRecentFiles
+}

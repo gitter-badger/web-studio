@@ -1,11 +1,14 @@
 {
 	"name": "web-studio",
 	"version": "0.0.1",
+	"description": "Design and press your website without coding.",
 	"repository": "http://github.com/ije/web-studio",
 	"license": "MIT",
 	"author": {
 		"name": "studio X",
 		"url": "http://x-stud.io"
 	},
-	"dependencies": {}
+	"dependencies": {
+		"lodash": "^4.17.4"
+	}
 }
