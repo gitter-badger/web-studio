@@ -5,11 +5,30 @@ const _ = require('lodash')
 const dev = require('./dev')
 const storage = require('./storage')
 const utils = require('./x/utils')
-const Project = require('./project')
 
+let welcomeWindow = null
 let currentProject = null
 let openedProjects = []
-let welcomeWindow = null
+
+function Project (path, bw) {
+  this.path = path
+  this.bw = bw
+}
+
+Project.prototype = {
+  save: function (as) {
+
+  },
+  export: function () {
+
+  },
+  import: function () {
+
+  },
+  press: function () {
+
+  }
+}
 
 function open (projectPath) {
   const menu = require('./menu')
@@ -27,6 +46,7 @@ function open (projectPath) {
 
   if (welcomeWindow !== null) {
     welcomeWindow.close()
+    welcomeWindow = null
   }
 
   let project = null
@@ -49,7 +69,7 @@ function open (projectPath) {
     },
     minWidth: 800,
     minHeight: 400,
-    title: newProject ? 'untitled' : path.basename(projectPath),
+    title: newProject ? 'Untitled' : path.basename(projectPath),
     titleBarStyle: 'hidden-inset',
     frame: process.platform === 'darwin',
     acceptFirstMouse: true,
@@ -93,7 +113,8 @@ function init (openFile) {
     minimizable: false,
     maximizable: false,
     resizable: false,
-    fullscreenable: false
+    fullscreenable: false,
+    saveState: 'welcome'
   })
   welcomeWindow.on('closed', () => {
     welcomeWindow = null
@@ -110,7 +131,7 @@ function createWindow (options) {
 
   if (saveState) {
     let stat = storage.get('bw_' + options.saveState + '_state')
-    
+
     if (_.isObject(stat)) {
       _.each(stat, (value, key) => {
         state[key] = value
@@ -130,16 +151,6 @@ function createWindow (options) {
     return win
   }
 
-  win.on('resize', () => {
-    let pos = win.getPosition()
-    let size = win.getSize()
-
-    state.x = pos[0]
-    state.y = pos[1]
-    state.width = size[0]
-    state.height = size[1]
-  })
-
   win.on('moved', () => {
     let pos = win.getPosition()
 
@@ -147,21 +158,37 @@ function createWindow (options) {
     state.y = pos[1]
   })
 
-  win.on('maximize', () => {
-    state.maximize = true
-  })
+  if (options.resizable) {
+    win.on('resize', () => {
+      let pos = win.getPosition()
+      let size = win.getSize()
 
-  win.on('unmaximize', () => {
-    state.maximize = false
-  })
+      state.x = pos[0]
+      state.y = pos[1]
+      state.width = size[0]
+      state.height = size[1]
+    })
+  }
 
-  win.on('enter-full-screen', () => {
-    state.fullscreen = true
-  })
+  if (options.maximizable) {
+    win.on('maximize', () => {
+      state.maximize = true
+    })
 
-  win.on('leave-full-screen', () => {
-    state.fullscreen = false
-  })
+    win.on('unmaximize', () => {
+      state.maximize = false
+    })
+  }
+
+  if (options.fullscreenable) {
+    win.on('enter-full-screen', () => {
+      state.fullscreen = true
+    })
+
+    win.on('leave-full-screen', () => {
+      state.fullscreen = false
+    })
+  }
 
   win.on('closed', () => {
     storage.set('bw_' + options.saveState + '_state', state)
@@ -170,9 +197,30 @@ function createWindow (options) {
   return win
 }
 
+function config () {
+  createWindow({
+    urlArgs: {
+      preferences: true
+    },
+    width: 800,
+    height: 400,
+    title: 'Preferences',
+    titleBarStyle: 'hidden-inset',
+    frame: process.platform === 'darwin',
+    acceptFirstMouse: true,
+    minimizable: false,
+    maximizable: false,
+    resizable: false,
+    fullscreenable: false,
+    useContentSize: true,
+    saveState: 'preferences'
+  })
+}
+
 module.exports = {
   init,
   open,
+  config,
   save (as) {
     if (currentProject) {
       currentProject.save(as)

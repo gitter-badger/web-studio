@@ -2,7 +2,7 @@ const {app, ipcMain, shell} = require('electron')
 const dev = require('./dev')
 const menu = require('./menu')
 const storage = require('./storage')
-const editor = require('./editor')
+const studio = require('./studio')
 const htmlpdf = require('./x/htmlpdf')
 
 global.env = {
@@ -35,17 +35,17 @@ app.on('ready', () => {
     let checkDevAddrInterval = setInterval(() => {
       if (dev.addr() !== null) {
         clearInterval(checkDevAddrInterval)
-        editor.init(openFile)
+        studio.init(openFile)
       }
     }, 100)
   } else {
-    editor.init(openFile)
+    studio.init(openFile)
   }
 })
 
 // On macOS it's common to re-create a window in the app when the dock icon is clicked and there are no other windows open.
 app.on('activate', () => {
-  editor.init()
+  studio.init()
 })
 
 app.on('window-all-closed', () => {

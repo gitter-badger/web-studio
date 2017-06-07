@@ -3,7 +3,8 @@ const os = require('os')
 const path = require('path')
 const _ = require('lodash')
 const storage = require('./storage')
-const editor = require('./editor')
+const {accelerators} = require('./accelerators')
+const studio = require('./studio')
 const utils = require('./x/utils')
 const appVersion = app.getVersion()
 
@@ -17,23 +18,23 @@ let fileMenu = {
   label: 'File',
   submenu: [
     {
-      label: 'New Project',
+      label: 'New',
       click () {
-        editor.open()
+        studio.open()
       }
     },
     {
-      label: 'Open Project...',
+      label: 'Open...',
       click () {
         dialog.showOpenDialog({
           multiSelections: false,
           filters: [
-            {name: 'Web Studio Project Document', extensions: ['ws']},
+            {name: 'Web Project Document', extensions: ['web']},
             {name: 'All Files', extensions: ['*']}
           ]
         }, function (filePaths) {
           if (utils.isNEArray(filePaths)) {
-            editor.open(filePaths[0])
+            studio.open(filePaths[0])
           }
         })
       }
@@ -42,13 +43,13 @@ let fileMenu = {
     {
       label: 'Save',
       click () {
-        editor.save()
+        studio.save()
       }
     },
     {
       label: 'Save As...',
       click () {
-        editor.save(true)
+        studio.save(true)
       }
     },
     {
@@ -57,19 +58,19 @@ let fileMenu = {
     {
       label: 'Export...',
       click () {
-        editor.export()
+        studio.export()
       }
     },
     {
       label: 'Import...',
       click () {
-        editor.import()
+        studio.import()
       }
     },
     {
       label: 'Press...',
       click () {
-        editor.press()
+        studio.press()
       }
     }
   ]
@@ -186,8 +187,17 @@ let macAppMenu = {
   label: 'Web Studio',
   submenu: [
     {
-      role: 'about',
-      label: 'About Web Studio'
+      role: 'about'
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Preferences...',
+      accelerator: accelerators.preferences,
+      click () {
+        studio.config()
+      }
     },
     {
       type: 'separator'
@@ -200,8 +210,7 @@ let macAppMenu = {
       type: 'separator'
     },
     {
-      role: 'hide',
-      label: 'Hide Web Studio'
+      role: 'hide'
     },
     {
       role: 'hideothers'
@@ -213,8 +222,7 @@ let macAppMenu = {
       type: 'separator'
     },
     {
-      role: 'quit',
-      label: 'Quit Web Studio'
+      role: 'quit'
     }
   ]
 }
@@ -251,6 +259,17 @@ if (process.platform === 'darwin') {
   fileMenu.submenu.push({
     role: 'quit'
   })
+
+  editMenu.submenu.push(
+    {type: 'separator'},
+    {
+      label: 'Preferences...',
+      accelerator: accelerators.preferences,
+      click () {
+        studio.config()
+      }
+    }
+  )
 
   helpMenu.submenu.push({
     role: 'about',
@@ -315,7 +334,7 @@ function updateRecentFilesMenu () {
       label: path.basename(fp),
       path: fp,
       click (item) {
-        editor.open(item.path)
+        studio.open(item.path)
       }
     })
   })
