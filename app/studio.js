@@ -97,7 +97,7 @@ function open (projectPath) {
 
 function init (openFile) {
   if (utils.isNEString(openFile)) {
-    editor.open(openFile)
+    open(openFile)
     return
   }
 

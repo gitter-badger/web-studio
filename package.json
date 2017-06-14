@@ -1,31 +1,30 @@
 {
-	"name": "web-studio",
-	"version": "0.0.1",
-	"description": "Design and press your website without coding.",
-	"repository": "http://github.com/ije/web-studio",
-	"license": "MIT",
-	"author": {
-		"name": "studio X",
-		"url": "http://x-stud.io"
-	},
-	"scripts": {
-		"start": "electron ./app",
-		"prebuild": "cross-env NODE_ENV=production webpack --progress --hide-modules",
-		"build": "echo 'todo: package app'",
-		"postbuild": "rm -rf ./app/dist"
-	},
-	"devDependencies": {
-		"vue": "^2.2.1",
-		"electron": "^1.6.10",
-		"babel-core": "^6.0.0",
-		"babel-loader": "^6.0.0",
-		"babel-preset-latest": "^6.0.0",
-		"cross-env": "^3.0.0",
-		"css-loader": "^0.25.0",
-		"file-loader": "^0.11.0",
-		"vue-loader": "^12.2.0",
-		"vue-template-compiler": "^2.2.1",
-		"webpack": "^2.6.0",
-		"webpack-dev-server": "^2.4.5"
-	}
+  "name": "web-studio",
+  "version": "0.0.1",
+  "description": "Design and press your website without coding.",
+  "repository": "http://github.com/ije/web-studio",
+  "license": "MIT",
+  "author": {
+    "name": "studio X",
+    "url": "http://x-stud.io"
+  },
+  "scripts": {
+    "start": "electron ./app",
+    "prebuild": "cross-env NODE_ENV=production webpack --progress",
+    "build": "echo 'todo: package app'",
+    "postbuild": "echo 'todo: rm -rf ./app/dist'"
+  },
+  "devDependencies": {
+    "electron": "^1.6.10",
+    "typescript": "^2.3.4",
+    "vue": "^2.2.1",
+    "webpack": "^2.6.0",
+    "webpack-dev-server": "^2.4.5",
+    "file-loader": "^0.11.0",
+    "css-loader": "^0.25.0",
+    "ts-loader": "^2.1.0",
+    "vue-loader": "^12.2.0",
+    "vue-template-compiler": "^2.2.1",
+    "cross-env": "^3.0.0"
+  }
 }

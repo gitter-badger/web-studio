@@ -16,7 +16,7 @@ function start () {
     data = String(data)
     if (wdsAddr === null) {
       output += data
-      output.replace(/http\:\/\/[a-z0-9\:\/]+/i, function (m) {
+      output.replace(/http:\/\/[a-z0-9:/]+/i, function (m) {
         wdsAddr = m
         output = null
       })

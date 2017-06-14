@@ -339,7 +339,7 @@ function updateRecentFilesMenu () {
     })
   })
 
-  if (submenu.length == 0) {
+  if (submenu.length === 0) {
     recentFilesMenu.enabled = false
     recentFilesMenu.submenu = null
     return

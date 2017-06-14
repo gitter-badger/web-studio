@@ -24,13 +24,16 @@ app.on('ready', () => {
   storage.read()
   menu.install()
 
+  // todo: add vue.js devTool
+  // BrowserWindow.addDevToolsExtension(path)
+
   ipcMain.on('create-pdf', (e, filepath, html, css) => {
     htmlpdf.create(filepath, html, css + '\n.page-break{page-break-before: always!important;}', () => {
       shell.openExternal(filepath)
     })
   })
 
-  if (env.isDev) {
+  if (global.env.isDev) {
     dev.start()
     let checkDevAddrInterval = setInterval(() => {
       if (dev.addr() !== null) {
@@ -56,7 +59,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   storage.save()
-  if (env.isDev) {
+  if (global.env.isDev) {
     dev.stop()
   }
 })
