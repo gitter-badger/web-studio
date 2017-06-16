@@ -4,7 +4,7 @@ import welcome from './welcome'
 import preferences from './preferences.vue'
 import editor from './editor.vue'
 
-new Vue({
+(window as any).appRoot = new Vue({
   el: '#app',
   render: h => {
     const urlQuery = url.parse(window.location.href, true).query

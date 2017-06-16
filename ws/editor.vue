@@ -6,12 +6,12 @@
 
 <script lang="ts">
   import Vue from "vue"
-
+  
   export default Vue.extend({
     name: 'ws-editor',
     data () {
       return {
-        msg: 'let\'s draw!'
+        msg: 'let\'s draw!',
       }
     }
   })

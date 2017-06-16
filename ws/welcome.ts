@@ -14,4 +14,7 @@ export default {
       msg: 'Hello, Welcome to use Web Studio!',
     }
   },
+  print(a: any) {
+    console.log(a)
+  },
 } as ComponentOptions<Vue>

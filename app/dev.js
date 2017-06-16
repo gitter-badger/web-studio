@@ -1,4 +1,4 @@
-const {spawn} = require('child_process')
+const { spawn } = require('child_process')
 const path = require('path')
 const localNodeBinPath = path.resolve(__dirname, '../node_modules/.bin')
 
