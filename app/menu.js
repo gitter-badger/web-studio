@@ -19,12 +19,14 @@ let fileMenu = {
   submenu: [
     {
       label: 'New',
+      accelerator: accelerators.new,
       click () {
         studio.open()
       }
     },
     {
       label: 'Open...',
+      accelerator: accelerators.open,
       click () {
         dialog.showOpenDialog({
           multiSelections: false,
@@ -42,12 +44,16 @@ let fileMenu = {
     recentFilesMenu,
     {
       label: 'Save',
+      accelerator: accelerators.save,
+      enabled: false,
       click () {
         studio.save()
       }
     },
     {
       label: 'Save As...',
+      accelerator: accelerators.saveAs,
+      enabled: false,
       click () {
         studio.save(true)
       }
@@ -56,19 +62,22 @@ let fileMenu = {
       type: 'separator'
     },
     {
-      label: 'Export...',
-      click () {
-        studio.export()
-      }
-    },
-    {
       label: 'Import...',
+      enabled: false,
       click () {
         studio.import()
       }
     },
     {
+      label: 'Export...',
+      enabled: false,
+      click () {
+        studio.export()
+      }
+    },
+    {
       label: 'Press...',
+      enabled: false,
       click () {
         studio.press()
       }
@@ -98,9 +107,6 @@ let editMenu = {
       role: 'paste'
     },
     {
-      role: 'pasteandmatchstyle'
-    },
-    {
       role: 'delete'
     },
     {
@@ -112,15 +118,6 @@ let editMenu = {
 let viewMenu = {
   label: 'View',
   submenu: [
-    {
-      role: 'reload'
-    },
-    {
-      role: 'toggledevtools'
-    },
-    {
-      type: 'separator'
-    },
     {
       role: 'resetzoom'
     },
@@ -154,6 +151,16 @@ let windowMenu = {
 let helpMenu = {
   role: 'help',
   submenu: [
+    {
+      label: 'Reload Studio',
+      role: 'reload'
+    },
+    {
+      role: 'toggledevtools'
+    },
+    {
+      type: 'separator'
+    },
     {
       label: 'Report an Issue...',
       click () {
@@ -285,49 +292,11 @@ if (process.platform === 'darwin') {
   })
 }
 
-function install () {
-  updateRecentFilesMenu()
+function setMenu () {
   Menu.setApplicationMenu(Menu.buildFromTemplate(appMenuList))
 }
 
-// function update (handle) {
-//   if (typeof handle === 'function') {
-//     handle(appMenuList)
-//   }
-//   install()
-// }
-
-function addRecentFile (path) {
-  let tmp = [path]
-  _.each(recentFiles, (fp) => {
-    if (fp !== path) {
-      tmp.push(fp)
-    }
-  })
-  recentFiles = tmp
-  storage.set('recentFiles', recentFiles)
-  install()
-}
-
-function removeRecentFile (path) {
-  let tmp = []
-  _.each(recentFiles, (fp) => {
-    if (fp !== path) {
-      tmp.push(fp)
-    }
-  })
-  recentFiles = tmp
-  storage.set('recentFiles', recentFiles)
-  install()
-}
-
-function clearRecentFiles () {
-  recentFiles = []
-  storage.set('recentFiles', recentFiles)
-  install()
-}
-
-function updateRecentFilesMenu () {
+function updateMenu () {
   let submenu = []
   _.each(recentFiles, (fp) => {
     submenu.push({
@@ -342,6 +311,7 @@ function updateRecentFilesMenu () {
   if (submenu.length === 0) {
     recentFilesMenu.enabled = false
     recentFilesMenu.submenu = null
+    setMenu()
     return
   }
 
@@ -356,6 +326,59 @@ function updateRecentFilesMenu () {
   })
   recentFilesMenu.enabled = true
   recentFilesMenu.submenu = submenu
+  setMenu()
+}
+
+function addRecentFile (path) {
+  let tmp = [path]
+  _.each(recentFiles, (fp) => {
+    if (fp !== path) {
+      tmp.push(fp)
+    }
+  })
+  recentFiles = tmp
+  storage.set('recentFiles', recentFiles)
+  updateMenu()
+}
+
+function removeRecentFile (path) {
+  let tmp = []
+  _.each(recentFiles, (fp) => {
+    if (fp !== path) {
+      tmp.push(fp)
+    }
+  })
+  recentFiles = tmp
+  storage.set('recentFiles', recentFiles)
+  updateMenu()
+}
+
+function clearRecentFiles () {
+  recentFiles = []
+  storage.set('recentFiles', recentFiles)
+  updateMenu()
+}
+
+function enable () {
+  _.each(appMenuList, (menu) => {
+    _.each(menu.submenu, (item) => {
+      if ('enabled' in item) {
+        item.enabled = true
+      }
+    })
+  })
+  setMenu()
+}
+
+function disable () {
+  _.each(appMenuList, (menu) => {
+    _.each(menu.submenu, (item) => {
+      if ('enabled' in item) {
+        item.enabled = false
+      }
+    })
+  })
+  setMenu()
 }
 
 module.exports = {
@@ -365,9 +388,11 @@ module.exports = {
         recentFiles.push(value)
       }
     })
-    install()
+    updateMenu()
   },
   addRecentFile,
   removeRecentFile,
-  clearRecentFiles
+  clearRecentFiles,
+  enable,
+  disable
 }
