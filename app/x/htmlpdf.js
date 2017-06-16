@@ -8,7 +8,7 @@ function createPDF (filepath, html, css, done) {
 
   fs.writeFile(tmpHtml, `<!DOCTYPE html><html><head><style>${css}</style></head><body>${html}</body></html>`, (error) => {
     if (error) {
-      throw err
+      throw error
     }
 
     let vm = new BrowserWindow({
@@ -26,12 +26,12 @@ function createPDF (filepath, html, css, done) {
         }.bind(vm), 50)
 
         if (error) {
-          throw err
+          throw error
         }
 
         fs.writeFile(filepath, data, (error) => {
           if (error) {
-            throw err
+            throw error
           }
 
           if (typeof done === 'function') {
