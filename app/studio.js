@@ -1,48 +1,223 @@
 const {BrowserWindow, dialog} = require('electron')
 const path = require('path')
 const fs = require('fs')
+const async = require('async')
 const _ = require('lodash')
 const dev = require('./dev')
 const storage = require('./storage')
 const utils = require('./x/utils')
 
-let welcomeWindow = null
 let currentProject = null
 let openedProjects = []
+let welcomeWindow = null
 
-function Project (path, bw) {
-  this.path = path
-  this.bw = bw
-}
+class Project {
+  constructor (path, meta, window) {
+    this.path = path
+    this.meta = Object.assign({
+      title: 'Untitled',
+      documentSize: 0,
+      assetFiles: []
+    }, meta)
+    this.window = window
+  }
 
-Project.prototype = {
-  save: function (as) {
+  save (as) {
+    let newPath = this.path
+    if (!newPath || !!as) {
+      newPath = dialog.showSaveDialog(this.window, {
+        defaultPath: this.path,
+        filters: [
+            {name: 'Web Project Document', extensions: ['web']}
+        ]
+      })
+      if (!newPath) {
+        return
+      }
+    }
 
-  },
-  export: function () {
+    const _self = this
 
-  },
-  import: function () {
+    openFile(
+      newPath,
+      'w+',
+      (fd, done) => {
+        let buf = Buffer.from('WS\0\0\0\0')
+        buf.writeUInt32LE(_self.meta.assetFiles.length, 2)
+        fs.write(fd, buf, (err, n) => {
+          done(err, n)
+        })
+      },
+      // (fd, written, done) => {
+      //   // todo: write asset files
+      // },
+      (fd, written, done) => {
+        let buf = Buffer.from(JSON.stringify(_self.meta))
+        fs.write(fd, buf, (err, n) => {
+          if (err) {
+            done(err)
+            return
+          }
 
-  },
-  press: function () {
+          written += n
+          _self.meta.documentSize = written
+          _self.path = newPath
+          done()
+        })
+      }
+    )
+  }
+
+  export () {
 
   }
+
+  import () {
+
+  }
+
+  press () {
+
+  }
+}
+
+function warnDialog (message) {
+  let msg = message.split('\n', 2)
+
+  dialog.showMessageBox({
+    type: 'info',
+    buttons: ['OK'],
+    message: msg[0],
+    detail: msg[1]
+  })
+}
+
+function openFile (path, flags) {
+  const callbacks = Array.prototype.slice.call(arguments, 2)
+  const n = callbacks.length
+  if (n === 0) {
+    return
+  }
+
+  fs.open(path, flags, (err, fd) => {
+    if (err) {
+      warnDialog(`File can not be open\nThe Path '${path}' can not be open.`)
+      return
+    }
+
+    let i = 0
+    let ret = null
+
+    async.whilst(
+      () => {
+        return i < n
+      },
+      (done) => {
+        let cb = callbacks[i]
+        if (typeof cb === 'function') {
+          let args = [fd]
+          if (ret !== null && ret !== undefined) {
+            args.push(ret)
+          }
+          args.push(function (err, newRet) {
+            ret = newRet
+            done(err)
+          })
+          cb.apply(null, args)
+        } else {
+          done()
+        }
+        i++
+      },
+      (err) => {
+        if (err) {
+          warnDialog(err.message)
+        }
+        fs.closeSync(fd)
+      }
+    )
+  })
 }
 
 function open (projectPath) {
   const menu = require('./menu')
-  const newProject = !utils.isNEString(projectPath)
 
-  if (!newProject && !fs.existsSync(projectPath)) {
-    menu.removeRecentFile(projectPath)
-    dialog.showMessageBox({
-      type: 'warn',
-      title: 'Path dose not exist',
-      message: `The Path '${projectPath}' does not seem to exist anymore on disk.`
-    })
+  if (!utils.isNEString(projectPath)) {
+    openProject(null, {})
     return
   }
+
+  if (!fs.existsSync(projectPath)) {
+    menu.removeRecentFile(projectPath)
+    warnDialog(`Path dose not exist\nThe Path '${projectPath}' does not seem to exist anymore on disk.`)
+    return
+  }
+
+  openFile(
+    projectPath,
+    'r',
+    (fd, done) => {
+      fs.fstat(fd, (err, stats) => {
+        if (err) {
+          err = new Error('File can not be read')
+        }
+        done(err, stats)
+      })
+    },
+    (fd, stats, done) => {
+      fs.read(fd, Buffer.alloc(6), 0, 6, 0, (err, n, buffer) => {
+        if (err) {
+          err = new Error('File can not be read')
+          done(err)
+          return
+        }
+
+        if (n !== 6 || buffer.toString('utf8', 0, 2) !== 'WS') {
+          menu.removeRecentFile(projectPath)
+          done(new Error(`Invalid project document\nThe Path '${projectPath}' is not a valid Web Studio project document.`))
+          return
+        }
+
+        done(null, Object.assign(stats, { projectAssetNumber: buffer.readUInt32LE(2) }))
+      })
+    },
+    (fd, stats, done) => {
+      const metaDataSize = stats.size - stats.projectAssetNumber * 4 - 6
+
+      if (metaDataSize < 2) {
+        menu.removeRecentFile(projectPath)
+        done(new Error(`Invalid project document\nThe Path '${projectPath}' is not a valid Web Studio project document.`))
+        return
+      }
+
+      fs.read(fd, Buffer.alloc(metaDataSize), 0, metaDataSize, 6 + stats.projectAssetNumber * 4, (err, n, metaData) => {
+        let meta
+
+        if (!err) {
+          try {
+            meta = JSON.parse(metaData.toString())
+          } catch (error) {
+            err = new Error('bad meta')
+          }
+        }
+
+        if (err || n !== metaDataSize) {
+          menu.removeRecentFile(projectPath)
+          done(new Error(`Invalid project document\nThe Path '${projectPath}' is not a valid Web Studio project document.`))
+          return
+        }
+
+        meta.documentSize = stats.size
+        openProject(projectPath, meta)
+        done()
+      })
+    }
+  )
+}
+
+function openProject (projectPath, projectMeta) {
+  const menu = require('./menu')
+  const isNew = !utils.isNEString(projectPath)
 
   if (welcomeWindow !== null) {
     welcomeWindow.close()
@@ -51,35 +226,37 @@ function open (projectPath) {
 
   let project = null
 
-  if (!newProject) {
+  if (!isNew) {
     _.each(openedProjects, function (proj) {
       if (proj.path === projectPath) {
         project = proj
       }
     })
     if (project !== null) {
-      project.bw.focus()
+      project.window.focus()
       return
     }
   }
 
-  project = new Project(projectPath, createWindow({
+  project = new Project(projectPath, projectMeta, createWindow({
     urlArgs: {
-      project: newProject ? 'new' : encodeURIComponent(projectPath)
+      project: isNew ? 'new' : encodeURIComponent(projectPath)
     },
     minWidth: 800,
     minHeight: 400,
-    title: newProject ? 'Untitled' : path.basename(projectPath),
+    title: isNew ? 'Untitled.web' : path.basename(projectPath),
     titleBarStyle: 'hidden-inset',
     frame: process.platform === 'darwin',
     acceptFirstMouse: true,
     saveState: 'editor'
   }))
 
-  project.bw.on('focus', () => {
+  menu.enable()
+  project.window.on('focus', () => {
     currentProject = project
+    menu.enable()
   })
-  project.bw.on('closed', () => {
+  project.window.on('closed', () => {
     var tmp = []
     _.each(openedProjects, function (proj) {
       if (proj.path !== project.path) {
@@ -90,12 +267,14 @@ function open (projectPath) {
   })
   currentProject = project
   openedProjects.push(project)
-  if (!newProject) {
+  if (!isNew) {
     menu.addRecentFile(projectPath)
   }
 }
 
 function init (openFile) {
+  const menu = require('./menu')
+
   if (utils.isNEString(openFile)) {
     open(openFile)
     return
@@ -116,6 +295,12 @@ function init (openFile) {
     fullscreenable: false,
     saveState: 'welcome'
   })
+
+  menu.disable()
+  welcomeWindow.on('focus', () => {
+    menu.disable()
+  })
+
   welcomeWindow.on('closed', () => {
     welcomeWindow = null
   })
@@ -198,6 +383,8 @@ function createWindow (options) {
 }
 
 function config () {
+  const menu = require('./menu')
+
   createWindow({
     urlArgs: {
       preferences: true
@@ -214,6 +401,11 @@ function config () {
     fullscreenable: false,
     useContentSize: true,
     saveState: 'preferences'
+  })
+
+  menu.disable()
+  welcomeWindow.on('focus', () => {
+    menu.disable()
   })
 }
 
