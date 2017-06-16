@@ -6,14 +6,12 @@ const applicationMenu = {
   quit: isMac ? 'Q' : '',
 
   // Shell/File menu
-  newWindow: 'N',
-  newTab: 'T',
-  splitVertically: isMac ? 'D' : 'Shift+E',
-  splitHorizontally: isMac ? 'Shift+D' : 'Shift+O',
-  closeSession: 'W',
-  closeWindow: 'Shift+W',
+  new: 'N',
+  open: 'O',
+  save: 'S',
+  saveAs: 'Shift+S',
 
-  // Edit menu
+   // Edit menu
   undo: 'Z',
   redo: 'Shift+Z',
   cut: 'X',
@@ -31,15 +29,8 @@ const applicationMenu = {
   zoomIn: 'plus',
   zoomOut: '-',
 
-  // Plugins menu
-  updatePlugins: 'Shift+U',
-
   // Window menu
   minimize: 'M',
-  showPreviousTab: 'Alt+Left',
-  showNextTab: 'Alt+Right',
-  selectNextPane: 'Ctrl+Alt+Tab',
-  selectPreviousPane: 'Ctrl+Shift+Alt+Tab',
   enterFullScreen: isMac ? 'Ctrl+Cmd+F' : 'F11'
 }
 
