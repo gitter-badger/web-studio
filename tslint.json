@@ -22,7 +22,12 @@
         "named-imports-order": "case-insensitive"
       }
     ],
-    "semicolon": false,
+    "semicolon": [
+      false
+    ],
+    "no-console": [
+      false
+    ],
     "arrow-parens": false,
     "object-literal-sort-keys": false
   },
