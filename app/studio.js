@@ -1,4 +1,4 @@
-const {BrowserWindow, dialog} = require('electron')
+const {app, BrowserWindow, ipcMain, dialog} = require('electron')
 const path = require('path')
 const fs = require('fs')
 const async = require('async')
@@ -7,26 +7,29 @@ const dev = require('./dev')
 const storage = require('./storage')
 const utils = require('./x/utils')
 
+let projects = new Map()
 let currentProject = null
-let openedProjects = []
 let welcomeWindow = null
+let projectIdIndex = 0
 
 class Project {
-  constructor (path, meta, window) {
-    this.path = path
+  constructor (pid, savePath, meta, window) {
+    this.id = pid
+    this.savePath = savePath
     this.meta = Object.assign({
       title: 'Untitled',
-      documentSize: 0,
       assetFiles: []
     }, meta)
     this.window = window
   }
 
   save (as) {
-    let newPath = this.path
+    const _self = this
+    let newPath = this.savePath
+
     if (!newPath || !!as) {
       newPath = dialog.showSaveDialog(this.window, {
-        defaultPath: this.path,
+        defaultPath: this.savePath,
         filters: [
             {name: 'Web Project Document', extensions: ['web']}
         ]
@@ -35,8 +38,6 @@ class Project {
         return
       }
     }
-
-    const _self = this
 
     openFile(
       newPath,
@@ -60,8 +61,7 @@ class Project {
           }
 
           written += n
-          _self.meta.documentSize = written
-          _self.path = newPath
+          _self.savePath = newPath
           done()
         })
       }
@@ -81,65 +81,7 @@ class Project {
   }
 }
 
-function warnDialog (message) {
-  let msg = message.split('\n', 2)
-
-  dialog.showMessageBox({
-    type: 'info',
-    buttons: ['OK'],
-    message: msg[0],
-    detail: msg[1]
-  })
-}
-
-function openFile (path, flags) {
-  const callbacks = Array.prototype.slice.call(arguments, 2)
-  const n = callbacks.length
-  if (n === 0) {
-    return
-  }
-
-  fs.open(path, flags, (err, fd) => {
-    if (err) {
-      warnDialog(`File can not be open\nThe Path '${path}' can not be open.`)
-      return
-    }
-
-    let i = 0
-    let ret = null
-
-    async.whilst(
-      () => {
-        return i < n
-      },
-      (done) => {
-        let cb = callbacks[i]
-        if (typeof cb === 'function') {
-          let args = [fd]
-          if (ret !== null && ret !== undefined) {
-            args.push(ret)
-          }
-          args.push(function (err, newRet) {
-            ret = newRet
-            done(err)
-          })
-          cb.apply(null, args)
-        } else {
-          done()
-        }
-        i++
-      },
-      (err) => {
-        if (err) {
-          warnDialog(err.message)
-        }
-        fs.closeSync(fd)
-      }
-    )
-  })
-}
-
-function open (projectPath) {
+function openProjectFile (projectPath) {
   const menu = require('./menu')
 
   if (!utils.isNEString(projectPath)) {
@@ -207,7 +149,6 @@ function open (projectPath) {
           return
         }
 
-        meta.documentSize = stats.size
         openProject(projectPath, meta)
         done()
       })
@@ -227,8 +168,8 @@ function openProject (projectPath, projectMeta) {
   let project = null
 
   if (!isNew) {
-    _.each(openedProjects, function (proj) {
-      if (proj.path === projectPath) {
+    projects.forEach((proj) => {
+      if (proj.savePath === projectPath) {
         project = proj
       }
     })
@@ -238,9 +179,10 @@ function openProject (projectPath, projectMeta) {
     }
   }
 
-  project = new Project(projectPath, projectMeta, createWindow({
+  const pid = ++projectIdIndex
+  project = new Project(pid, projectPath, projectMeta, createWindow({
     urlArgs: {
-      project: isNew ? 'new' : encodeURIComponent(projectPath)
+      project: pid
     },
     minWidth: 800,
     minHeight: 400,
@@ -251,22 +193,19 @@ function openProject (projectPath, projectMeta) {
     saveState: 'editor'
   }))
 
+  project.window.on('closed', () => {
+    projects.delete(project.id)
+  })
+
   menu.enable()
   project.window.on('focus', () => {
     currentProject = project
     menu.enable()
   })
-  project.window.on('closed', () => {
-    var tmp = []
-    _.each(openedProjects, function (proj) {
-      if (proj.path !== project.path) {
-        tmp.push(proj)
-      }
-    })
-    openedProjects = tmp
-  })
+
   currentProject = project
-  openedProjects.push(project)
+  projects.set(project.id, project)
+
   if (!isNew) {
     menu.addRecentFile(projectPath)
   }
@@ -276,11 +215,11 @@ function init (openFile) {
   const menu = require('./menu')
 
   if (utils.isNEString(openFile)) {
-    open(openFile)
+    openProjectFile(openFile)
     return
   }
 
-  if (openedProjects.length > 0 || welcomeWindow !== null) {
+  if (projects.size > 0 || welcomeWindow !== null) {
     return
   }
 
@@ -303,6 +242,33 @@ function init (openFile) {
 
   welcomeWindow.on('closed', () => {
     welcomeWindow = null
+  })
+}
+
+function config () {
+  const menu = require('./menu')
+
+  createWindow({
+    urlArgs: {
+      preferences: true
+    },
+    width: 800,
+    height: 400,
+    title: 'Preferences',
+    titleBarStyle: 'hidden-inset',
+    frame: process.platform === 'darwin',
+    acceptFirstMouse: true,
+    minimizable: false,
+    maximizable: false,
+    resizable: false,
+    fullscreenable: false,
+    useContentSize: true,
+    saveState: 'preferences'
+  })
+
+  menu.disable()
+  welcomeWindow.on('focus', () => {
+    menu.disable()
   })
 }
 
@@ -382,37 +348,96 @@ function createWindow (options) {
   return win
 }
 
-function config () {
-  const menu = require('./menu')
+function warnDialog (message) {
+  let msg = message.split('\n', 2)
 
-  createWindow({
-    urlArgs: {
-      preferences: true
-    },
-    width: 800,
-    height: 400,
-    title: 'Preferences',
-    titleBarStyle: 'hidden-inset',
-    frame: process.platform === 'darwin',
-    acceptFirstMouse: true,
-    minimizable: false,
-    maximizable: false,
-    resizable: false,
-    fullscreenable: false,
-    useContentSize: true,
-    saveState: 'preferences'
-  })
-
-  menu.disable()
-  welcomeWindow.on('focus', () => {
-    menu.disable()
+  dialog.showMessageBox({
+    type: 'info',
+    buttons: ['OK'],
+    message: msg[0],
+    detail: msg[1]
   })
 }
 
+function openFile (path, flags) {
+  const callbacks = Array.prototype.slice.call(arguments, 2)
+  const n = callbacks.length
+  if (n === 0) {
+    return
+  }
+
+  fs.open(path, flags, (err, fd) => {
+    if (err) {
+      warnDialog(`File can not be open\nThe Path '${path}' can not be open.`)
+      return
+    }
+
+    let i = 0
+    let ret = null
+
+    async.whilst(
+      () => {
+        return i < n
+      },
+      (done) => {
+        let cb = callbacks[i]
+        if (typeof cb === 'function') {
+          let args = [fd]
+          if (ret !== null && ret !== undefined) {
+            args.push(ret)
+          }
+          args.push(function (err, newRet) {
+            ret = newRet
+            done(err)
+          })
+          cb.apply(null, args)
+        } else {
+          done()
+        }
+        i++
+      },
+      (err) => {
+        if (err) {
+          warnDialog(err.message)
+        }
+        fs.closeSync(fd)
+      }
+    )
+  })
+}
+
+function isProjectMetaObject (obj) {
+  if (!_.isPlainObject(obj)) {
+    return false
+  }
+
+  return true
+}
+
+app.on('ready', () => {
+  ipcMain.on('project-meta', (e, pid, meta) => {
+    const project = projects.get(pid)
+
+    if (!project) {
+      e.returnValue = null
+      return
+    }
+
+    if (isProjectMetaObject(meta)) {
+      project.meta = meta
+      e.returnValue = true
+      return
+    }
+
+    project.meta.savePath = project.savePath
+    e.returnValue = project.meta
+  })
+})
+
 module.exports = {
   init,
-  open,
   config,
+  open: openProjectFile,
   save (as) {
     if (currentProject) {
       currentProject.save(as)
