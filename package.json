@@ -28,6 +28,7 @@
     "vue": "^2.2.4",
     "vue-loader": "^12.2.0",
     "vue-template-compiler": "^2.2.1",
+    "@types/lodash": "^4.14.66",
     "cross-env": "^3.0.0"
   }
 }
