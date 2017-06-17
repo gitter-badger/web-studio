@@ -8,6 +8,7 @@ module.exports = {
     publicPath: '/app/dist/',
     filename: 'bundle.js'
   },
+  target: 'electron-renderer',
   module: {
     rules: [
       {
