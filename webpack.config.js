@@ -1,8 +1,8 @@
-var path = require('path')
-var webpack = require('webpack')
+const path = require('path')
+const webpack = require('webpack')
 
 module.exports = {
-  entry: './ws/main.ts',
+  entry: './studio/main.ts',
   output: {
     path: path.resolve(__dirname, './app/dist'),
     publicPath: '/app/dist/',
@@ -27,8 +27,8 @@ module.exports = {
         }
       },
       {
-        test: /\.less$/,
-        loader: 'style-loader!css-loader!less-loader'
+        test: /\.less$/i,
+        use: ['style-loader', 'css-loader', 'less-loader']
       },
       {
         test: /\.(png|jpe?g|gif|svg|ttf|otf|woff2?)(\?.*)?$/,
@@ -47,7 +47,9 @@ module.exports = {
   },
   devServer: {
     historyApiFallback: true,
-    noInfo: true
+    noInfo: true,
+    inline: true,
+    hot: true
   },
   performance: {
     hints: false
@@ -72,6 +74,7 @@ if (process.env.NODE_ENV === 'production') {
     }),
     new webpack.LoaderOptionsPlugin({
       minimize: true
-    })
+    }),
+    new webpack.BannerPlugin('Copyright studio X')
   ])
 }

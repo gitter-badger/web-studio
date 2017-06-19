@@ -13,14 +13,22 @@ let welcomeWindow = null
 let projectIdIndex = 0
 
 class Project {
-  constructor (pid, savePath, meta, window) {
+  constructor (pid, savePath, meta, bw) {
     this.id = pid
     this.savePath = savePath
     this.meta = Object.assign({
-      title: 'Untitled',
-      assetFiles: []
+      assetFiles: [],
+      layers: []
     }, meta)
-    this.window = window
+    this.bw = bw
+  }
+
+  undo () {
+    this.bw.webContents.send('undo')
+  }
+
+  redo () {
+    this.bw.webContents.send('undo')
   }
 
   save (as) {
@@ -28,7 +36,7 @@ class Project {
     let newPath = this.savePath
 
     if (!newPath || !!as) {
-      newPath = dialog.showSaveDialog(this.window, {
+      newPath = dialog.showSaveDialog(this.bw, {
         defaultPath: this.savePath,
         filters: [
             {name: 'Web Project Document', extensions: ['web']}
@@ -45,23 +53,23 @@ class Project {
       (fd, done) => {
         let buf = Buffer.from('WS\0\0\0\0')
         buf.writeUInt32LE(_self.meta.assetFiles.length, 2)
-        fs.write(fd, buf, (err, n) => {
-          done(err, n)
+        fs.write(fd, buf, (err) => {
+          done(err)
         })
       },
       // (fd, written, done) => {
       //   // todo: write asset files
       // },
-      (fd, written, done) => {
+      (fd, done) => {
         let buf = Buffer.from(JSON.stringify(_self.meta))
-        fs.write(fd, buf, (err, n) => {
+        fs.write(fd, buf, (err) => {
           if (err) {
             done(err)
             return
           }
 
-          written += n
           _self.savePath = newPath
+          _self.bw.webContents.send('saved', path.basename(newPath))
           done()
         })
       }
@@ -174,31 +182,33 @@ function openProject (projectPath, projectMeta) {
       }
     })
     if (project !== null) {
-      project.window.focus()
+      project.bw.focus()
       return
     }
   }
 
   const pid = ++projectIdIndex
+  const documentTitle = isNew ? 'Untitled.web' : path.basename(projectPath)
   project = new Project(pid, projectPath, projectMeta, createWindow({
     urlArgs: {
+      documentTitle,
       project: pid
     },
     minWidth: 800,
     minHeight: 400,
-    title: isNew ? 'Untitled.web' : path.basename(projectPath),
+    title: documentTitle,
     titleBarStyle: 'hidden-inset',
     frame: process.platform === 'darwin',
     acceptFirstMouse: true,
     saveState: 'editor'
   }))
 
-  project.window.on('closed', () => {
+  project.bw.on('closed', () => {
     projects.delete(project.id)
   })
 
   menu.enable()
-  project.window.on('focus', () => {
+  project.bw.on('focus', () => {
     currentProject = project
     menu.enable()
   })

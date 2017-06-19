@@ -1,15 +1,39 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="./assets/css/normalize.css">
-    <link rel="stylesheet" type="text/css" href="./assets/css/app.css">
-    <title>Web Studio</title>
-  </head>
-  <body>
-    <div id="app">loading...</div>
-    <script>start = performance.now()</script>
-    <script src="./dist/bundle.js"></script>
-  </body>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1.0">
+  <style>
+    body {
+      backface-visibility: hidden;
+      user-select: none;
+      cursor: default;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      font-size: 10px;
+      text-rendering: optimizeLegibility;
+      box-sizing: border-box;
+    }
+
+    @media (min-resolution: 2dppx) {
+      * {
+        text-rendering: geometricPrecision;
+      }
+    }
+  </style>
+  <title>Web Studio</title>
+</head>
+
+<body>
+  <div id="app">loading...</div>
+  <script>
+    start = performance.now()
+  </script>
+  <script src="./dist/bundle.js"></script>
+</body>
+
 </html>
