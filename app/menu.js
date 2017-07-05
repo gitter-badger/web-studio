@@ -138,6 +138,7 @@ let viewMenu = {
       type: 'checkbox',
       projectProperty: 'showLayers',
       click (menuItem) {
+        storage.set('showLayers', menuItem.checked)
         studio.showLayers(menuItem.checked)
       },
       enabled: false,
@@ -148,6 +149,7 @@ let viewMenu = {
       type: 'checkbox',
       projectProperty: 'showInspector',
       click (menuItem) {
+        storage.set('showInspector', menuItem.checked)
         studio.showInspector(menuItem.checked)
       },
       enabled: false,
