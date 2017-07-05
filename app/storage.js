@@ -1,6 +1,7 @@
 const {app} = require('electron')
 const path = require('path')
 const fs = require('fs')
+const utils = require('./x/utils')
 const storageSavePath = path.join(app.getPath('userData'), 'storage.json')
 
 let storage = {}
@@ -33,7 +34,7 @@ function delaySave () {
 
 module.exports = {
   get: (key, def) => {
-    if (typeof key !== 'string' || key === '') {
+    if (!utils.isNEString(key)) {
       return undefined
     }
 
@@ -44,10 +45,18 @@ module.exports = {
     return def
   },
   set: (key, value) => {
+    if (!utils.isNEString(key) || value === undefined) {
+      return
+    }
+
     storage[key] = value
     delaySave()
   },
   delete: (key) => {
+    if (!utils.isNEString(key)) {
+      return
+    }
+
     delete storage[key]
     delaySave()
   },
