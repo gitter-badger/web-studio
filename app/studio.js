@@ -21,6 +21,7 @@ class Project {
       layers: []
     }, meta)
     this.bw = bw
+    this.leftAsideWidth = storage.get('leftAsideWidth', 270)
     this.showLayers = storage.get('showLayers', true)
     this.showInspector = storage.get('showInspector', true)
     this.previewMode = false
@@ -30,7 +31,7 @@ class Project {
     this.bw.webContents.send.apply(this.bw.webContents, Array.prototype.slice.call(arguments, 0))
   }
 
-  set (key, value) {
+  setBoth (key, value) {
     if (key in this) {
       this.key = value
       this.send('project-property', key, value)
@@ -307,6 +308,7 @@ function createWindow (options) {
   if (saveState) {
     let stat = storage.get('bw_' + options.saveState + '_state')
 
+    console.log(options.saveState, stat)
     if (_.isObject(stat)) {
       _.each(stat, (value, key) => {
         state[key] = value
@@ -333,7 +335,7 @@ function createWindow (options) {
     state.y = pos[1]
   })
 
-  if (options.resizable) {
+  if (options.resizable !== false) {
     win.on('resize', () => {
       let pos = win.getPosition()
       let size = win.getSize()
@@ -345,7 +347,7 @@ function createWindow (options) {
     })
   }
 
-  if (options.maximizable) {
+  if (options.maximizable !== false) {
     win.on('maximize', () => {
       state.maximize = true
     })
@@ -355,7 +357,7 @@ function createWindow (options) {
     })
   }
 
-  if (options.fullscreenable) {
+  if (options.fullscreenable !== false) {
     win.on('enter-full-screen', () => {
       state.fullscreen = true
     })
@@ -439,18 +441,46 @@ function isProjectMetaObject (obj) {
 }
 
 app.on('ready', () => {
-  ipcMain.on('project-property', (e, keys) => {
-    const returnValues = {}
-
-    if (currentProject && _.isArray(keys)) {
-      _.each(keys, function (key) {
-        if (typeof key === 'string' && key !== '' && key in currentProject) {
-          returnValues[key] = currentProject[key]
-        }
-      })
+  ipcMain.on('app-storage', (e, key, value) => {
+    if (!utils.isNEString(key)) {
+      e.returnValue = null
+      return
     }
 
-    e.returnValue = returnValues
+    if (!_.isUndefined(value)) {
+      storage.set(key, value)
+      e.returnValue = true
+      return
+    }
+
+    e.returnValue = storage.get(key)
+  })
+
+  ipcMain.on('project-property', (e, v) => {
+    if (!currentProject) {
+      e.returnValue = {}
+      return
+    }
+
+    if (_.isArray(v)) {
+      const returnValue = {}
+      _.each(v, function (key) {
+        if (utils.isNEString(key) && key in currentProject) {
+          returnValue[key] = currentProject[key]
+        }
+      })
+      e.returnValue = returnValue
+      return
+    }
+
+    if (_.isPlainObject(v)) {
+      _.each(v, (value, key) => {
+        if (key in currentProject) {
+          currentProject[key] = value
+        }
+      })
+      e.returnValue = true
+    }
   })
 
   ipcMain.on('project-meta', (e, pid, meta) => {
@@ -497,20 +527,18 @@ module.exports = {
     }
   },
   showLayers (ok) {
-    storage.set('showLayers', ok)
     if (currentProject) {
-      currentProject.set('showLayers', ok)
+      currentProject.setBoth('showLayers', ok)
     }
   },
   showInspector (ok) {
-    storage.set('showInspector', ok)
     if (currentProject) {
-      currentProject.set('showInspector', ok)
+      currentProject.setBoth('showInspector', ok)
     }
   },
   previewMode (ok) {
     if (currentProject) {
-      currentProject.set('previewMode', ok)
+      currentProject.setBoth('previewMode', ok)
     }
   }
 }
