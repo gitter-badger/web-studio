@@ -119,19 +119,56 @@ let viewMenu = {
   label: 'View',
   submenu: [
     {
-      role: 'resetzoom'
+      role: 'resetzoom',
+      enabled: false
     },
     {
-      role: 'zoomin'
+      role: 'zoomin',
+      enabled: false
     },
     {
-      role: 'zoomout'
+      role: 'zoomout',
+      enabled: false
     },
     {
       type: 'separator'
     },
     {
-      role: 'togglefullscreen'
+      label: 'Show Layers',
+      type: 'checkbox',
+      projectProperty: 'showLayers',
+      click (menuItem) {
+        studio.showLayers(menuItem.checked)
+      },
+      enabled: false,
+      checked: false
+    },
+    {
+      label: 'Show Inspector',
+      type: 'checkbox',
+      projectProperty: 'showInspector',
+      click (menuItem) {
+        studio.showInspector(menuItem.checked)
+      },
+      enabled: false,
+      checked: false
+    },
+    {
+      label: 'Preview Mode',
+      type: 'checkbox',
+      projectProperty: 'previewMode',
+      click (menuItem) {
+        studio.previewMode(menuItem.checked)
+      },
+      enabled: false,
+      checked: false
+    },
+    {
+      type: 'separator'
+    },
+    {
+      role: 'togglefullscreen',
+      enabled: false
     }
   ]
 }
@@ -359,10 +396,13 @@ function clearRecentFiles () {
   updateMenu()
 }
 
-function enable () {
+function enable (project) {
   _.each(appMenuList, (menu) => {
     _.each(menu.submenu, (item) => {
       if ('enabled' in item) {
+        if (item.type === 'checkbox' && 'projectProperty' in item && item.projectProperty in project) {
+          item.checked = !!project[item.projectProperty]
+        }
         item.enabled = true
       }
     })
@@ -375,6 +415,9 @@ function disable () {
     _.each(menu.submenu, (item) => {
       if ('enabled' in item) {
         item.enabled = false
+        if (item.type === 'checkbox') {
+          item.checked = false
+        }
       }
     })
   })
