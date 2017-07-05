@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain, dialog} = require('electron')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const async = require('async')
@@ -21,14 +21,28 @@ class Project {
       layers: []
     }, meta)
     this.bw = bw
+    this.showLayers = storage.get('showLayers', true)
+    this.showInspector = storage.get('showInspector', true)
+    this.previewMode = false
+  }
+
+  send () {
+    this.bw.webContents.send.apply(this.bw.webContents, Array.prototype.slice.call(arguments, 0))
+  }
+
+  set (key, value) {
+    if (key in this) {
+      this.key = value
+      this.send('project-property', key, value)
+    }
   }
 
   undo () {
-    this.bw.webContents.send('undo')
+    this.send('undo')
   }
 
   redo () {
-    this.bw.webContents.send('undo')
+    this.send('undo')
   }
 
   save (as) {
@@ -39,7 +53,7 @@ class Project {
       newPath = dialog.showSaveDialog(this.bw, {
         defaultPath: this.savePath,
         filters: [
-            {name: 'Web Project Document', extensions: ['web']}
+          { name: 'Web Project Document', extensions: ['web'] }
         ]
       })
       if (!newPath) {
@@ -69,7 +83,7 @@ class Project {
           }
 
           _self.savePath = newPath
-          _self.bw.webContents.send('saved', path.basename(newPath))
+          _self.send('saved', path.basename(newPath))
           done()
         })
       }
@@ -207,10 +221,10 @@ function openProject (projectPath, projectMeta) {
     projects.delete(project.id)
   })
 
-  menu.enable()
+  menu.enable(project)
   project.bw.on('focus', () => {
     currentProject = project
-    menu.enable()
+    menu.enable(project)
   })
 
   currentProject = project
@@ -258,7 +272,7 @@ function init (openFile) {
 function config () {
   const menu = require('./menu')
 
-  createWindow({
+  let preferencesWindow = createWindow({
     urlArgs: {
       preferences: true
     },
@@ -277,7 +291,7 @@ function config () {
   })
 
   menu.disable()
-  welcomeWindow.on('focus', () => {
+  preferencesWindow.on('focus', () => {
     menu.disable()
   })
 }
@@ -425,6 +439,20 @@ function isProjectMetaObject (obj) {
 }
 
 app.on('ready', () => {
+  ipcMain.on('project-property', (e, keys) => {
+    const returnValues = {}
+
+    if (currentProject && _.isArray(keys)) {
+      _.each(keys, function (key) {
+        if (typeof key === 'string' && key !== '' && key in currentProject) {
+          returnValues[key] = currentProject[key]
+        }
+      })
+    }
+
+    e.returnValue = returnValues
+  })
+
   ipcMain.on('project-meta', (e, pid, meta) => {
     const project = projects.get(pid)
 
@@ -466,6 +494,23 @@ module.exports = {
   press () {
     if (currentProject) {
       currentProject.press()
+    }
+  },
+  showLayers (ok) {
+    storage.set('showLayers', ok)
+    if (currentProject) {
+      currentProject.set('showLayers', ok)
+    }
+  },
+  showInspector (ok) {
+    storage.set('showInspector', ok)
+    if (currentProject) {
+      currentProject.set('showInspector', ok)
+    }
+  },
+  previewMode (ok) {
+    if (currentProject) {
+      currentProject.set('previewMode', ok)
     }
   }
 }
