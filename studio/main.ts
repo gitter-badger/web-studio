@@ -16,15 +16,15 @@ interface AppState extends Vue {
   previewMode: boolean,
 }
 
-const syncState = ipcRenderer.sendSync('project-property', ['showLayers', 'showInspector', 'previewMode']) as AppState
+const initState = ipcRenderer.sendSync('project-property', ['leftAsideWidth', 'showLayers', 'showInspector', 'previewMode']) as AppState
 const $state = new Vue({
   data: {
     windowWidth: window.innerWidth,
     windowHeight: window.innerHeight,
-    leftAsideWidth: 300,
-    showLayers: syncState.showLayers,
-    showInspector: syncState.showInspector,
-    previewMode: syncState.previewMode,
+    leftAsideWidth: initState.leftAsideWidth,
+    showLayers: initState.showLayers,
+    showInspector: initState.showInspector,
+    previewMode: initState.previewMode,
   },
 }) as AppState
 
@@ -56,11 +56,13 @@ Vue.mixin({
     $alterLeftAsideWidth: (n: number) => {
       let width = $state.leftAsideWidth + n
 
-      if (width < 150) {
-        width = 150
+      if (width < 180) {
+        width = 180
       } else if (width > $state.windowWidth / 2) {
         width = $state.windowWidth / 2
       }
+
+      ipcRenderer.send('app-storage', 'leftAsideWidth', width)
       $state.leftAsideWidth = width
     },
   },
