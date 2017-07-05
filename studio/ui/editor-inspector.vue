@@ -1,5 +1,5 @@
 <template>
-    <div id="ws-inspector">
+    <div id="editor-inspector">
         inspector
     </div>
 </template>
@@ -8,7 +8,7 @@
     import Vue, { ComponentOptions } from 'vue'
 
     export default {
-        prop: ['selection'],
+        props: ['selection'],
         data() {
             return {}
         }
@@ -16,7 +16,7 @@
 </script>
 
 <style lang="less">
-    #ws-inspector {
+    #editor-inspector {
         width: 100%;
     }
 </style>

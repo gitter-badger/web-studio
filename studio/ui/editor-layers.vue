@@ -1,5 +1,5 @@
 <template>
-    <div id="ws-layers">
+    <div :style="{width: leftAsideWidth+'px'}" id="editor-layers">
         layers
     </div>
 </template>
@@ -8,7 +8,7 @@
     import Vue, { ComponentOptions } from 'vue'
 
     export default {
-        prop: ['extends', 'pages'],
+        props: ['extends', 'pages'],
         data() {
             return {}
         }
@@ -16,7 +16,10 @@
 </script>
 
 <style lang="less">
-    #ws-layers {
-        width: 100%;
+    #editor-layers {
+        height: 100%;
+        background-color: #252c38;
+        overflow: hidden;
+        overflow-y: auto;
     }
 </style>

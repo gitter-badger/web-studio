@@ -1,6 +1,6 @@
 <template>
-    <div id="ws-canvas">
-        let's draw!
+    <div id="editor-canvas">
+       let's draw!
     </div>
 </template>
 
@@ -13,18 +13,17 @@
     }
 
     export default {
-        prop: ['page'],
+        props: ['page'],
         data() {
             return {}
-        },
-        created() {
-            this.page
         },
     } as ComponentOptions<CanvasComponent>
 </script>
 
 <style lang="less">
-    #ws-canvas {
+    #editor-canvas {
+        position: relative;
         width: 100%;
+        height: 100%;
     }
 </style>
