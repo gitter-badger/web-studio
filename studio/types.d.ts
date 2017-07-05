@@ -10,7 +10,7 @@ declare interface ElementPosition {
     right: number
 }
 
-declare interface ElementRGBA {
+declare interface ElementColor {
     r: number
     g: number
     b: number
@@ -20,7 +20,7 @@ declare interface ElementRGBA {
 declare interface ElementBorder {
     style: string
     tickness: number
-    color: ElementRGBA
+    color: ElementColor
 }
 
 declare interface WebElement extends ElementPosition {
@@ -32,15 +32,14 @@ declare interface WebElement extends ElementPosition {
     padding: ElementPosition
     border: ElementBorder
     opacity: number
-    bgColor: ElementRGBA
+    bgColor: ElementColor
     rotate: number
 }
 
-declare interface WebMeta {
-    title: string
-    extends: WebMeta[]
+declare interface Web {
+    extends: Web[]
     pages: WebPage[]
-    components: WebLayer[]
+    components: WebComponent[]
     assetFiles: WebAssetFile[]
 }
 
@@ -58,6 +57,10 @@ declare interface WebLayer extends WebElement {
     show: boolean
     collapsed: boolean
     children: WebLayer[]
+}
+
+declare interface WebComponent extends WebLayer {
+    title: string
 }
 
 declare interface WebAssetFile {
