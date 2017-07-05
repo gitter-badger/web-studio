@@ -32,7 +32,17 @@ function delaySave () {
 }
 
 module.exports = {
-  get: (key) => { return storage[key] },
+  get: (key, def) => {
+    if (typeof key !== 'string' || key === '') {
+      return undefined
+    }
+
+    if (key in storage) {
+      return storage[key]
+    }
+
+    return def
+  },
   set: (key, value) => {
     storage[key] = value
     delaySave()
