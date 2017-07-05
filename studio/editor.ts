@@ -2,45 +2,46 @@ import { ipcRenderer } from 'electron'
 import url from 'url'
 import _ from 'lodash'
 import Vue, { ComponentOptions } from 'vue'
-import wsHeader from './ui/header.vue'
-import wsCanvas from './ui/canvas.vue'
-import wsLayers from './ui/layers.vue'
-import wsInspector from './ui/inspector.vue'
-import './elements/elements.less'
+import editorTitleBar from './ui/editor-titleBar.vue'
+import editorCanvas from './ui/editor-canvas.vue'
+import editorLayers from './ui/editor-layers.vue'
+import editorInspector from './ui/editor-inspector.vue'
+import editorInsert from './ui/editor-insert.vue'
 
 const template = `
-<div id="ws-editor">
-    <ws-header :title="documentTitle" :edited="edited"></ws-header>
-    <ws-canvas :page="page" @selection="selected"></ws-canvas>
-    <ws-layers :extends="meta.extends" :pages="meta.pages" @selection="selected" v-if="showLayers"></ws-layers>
-    <ws-inspector :selection="selection" v-if="showInspector"></ws-inspector>
+<div id="app">
+    <editor-title-bar :documentTitle="documentTitle" :edited="edited" :page="page" @selection="selected"></editor-title-bar>
+    <editor-layers :extends="web.extends" :pages="web.pages" @selection="selected" v-if="showLayers"></editor-layers>
+    <editor-canvas :page="page" @selection="selected"></editor-canvas>
+    <editor-inspector :selection="selection" v-if="showInspector"></editor-inspector>
+    <editor-insert @insert="insert" v-if="!previewMode"></editor-insert>
 </div>
 `
 
 interface EditorComponent extends Vue {
     pid: number
     documentTitle: string
-    meta: WebMeta
+    web: Web
     page: WebPage
     selection: WebPage | WebLayer
     edited: boolean
-    showLayers: boolean
-    showInspector: boolean
+    insert(type: string): void
     undo(): void
     redo(): void
     selected(indexs: number[][]): void
 }
 
-let initialMeta: WebMeta
+let initialWeb: Web
 
 export default {
-    name: 'ws-editor',
+    name: 'editor-editor',
     template,
     components: {
-        wsHeader,
-        wsCanvas,
-        wsLayers,
-        wsInspector,
+        editorTitleBar,
+        editorCanvas,
+        editorLayers,
+        editorInspector,
+        editorInsert,
     },
     data() {
         return {
@@ -50,13 +51,11 @@ export default {
             page: null,
             selection: null,
             edited: false,
-            showLayers: true,
-            showInspector: true,
         }
     },
     methods: {
-        insert(layer: WebLayer | WebPage) {
-            console.log(layer)
+        insert(type: string) {
+            console.log(type)
         },
         align(direction: string) {
             console.log(direction)
@@ -79,22 +78,22 @@ export default {
         const query = url.parse(location.href, true).query
         const pid = parseInt(query.project, 10)
 
-        initialMeta = ipcRenderer.sendSync('project-meta', pid) as WebMeta
-        if (!initialMeta.pages) {
-            initialMeta.pages = []
+        initialWeb = ipcRenderer.sendSync('project-meta', pid) as Web
+        if (!initialWeb.pages) {
+            initialWeb.pages = []
         }
 
         vm.pid = pid
         vm.documentTitle = query.documentTitle
-        vm.meta = _.cloneDeep(initialMeta)
-        vm.$watch('meta', (newMeta: WebMeta, oldMeta: WebMeta) => {
+        vm.web = _.cloneDeep(initialWeb)
+        vm.$watch('meta', (newMeta: Web, oldMeta: Web) => {
             vm.edited = true
             ipcRenderer.send('project-meta', pid, newMeta)
             console.log(newMeta, oldMeta) // todo: log meta change
         }, { deep: true })
         ipcRenderer.on('saved', (documentTitle: string) => {
-            vm.documentTitle = documentTitle
             vm.edited = false
+            vm.documentTitle = documentTitle
         })
         ipcRenderer.on('undo', () => {
             vm.undo()
