@@ -15,13 +15,13 @@ let projectIdIndex = 0
 class Project {
   constructor (pid, savePath, meta, bw) {
     this.id = pid
+    this.bw = bw
     this.savePath = savePath
     this.meta = Object.assign({
       assetFiles: [],
       layers: []
     }, meta)
-    this.bw = bw
-    this.leftAsideWidth = storage.get('leftAsideWidth', 270)
+    this.leftAsideWidth = storage.get('leftAsideWidth', 300)
     this.showLayers = storage.get('showLayers', true)
     this.showInspector = storage.get('showInspector', true)
     this.previewMode = false
@@ -203,15 +203,15 @@ function openProject (projectPath, projectMeta) {
   }
 
   const pid = ++projectIdIndex
-  const documentTitle = isNew ? 'Untitled.web' : path.basename(projectPath)
+  const documentName = isNew ? 'Untitled.web' : path.basename(projectPath)
   project = new Project(pid, projectPath, projectMeta, createWindow({
     urlArgs: {
-      documentTitle,
+      documentName,
       project: pid
     },
     minWidth: 800,
     minHeight: 400,
-    title: documentTitle,
+    title: documentName,
     titleBarStyle: 'hidden-inset',
     frame: process.platform === 'darwin',
     acceptFirstMouse: true,
@@ -302,13 +302,12 @@ function createWindow (options) {
     options = {}
   }
 
-  let state = {}
-  let saveState = utils.isNEString(options.saveState)
+  const state = {}
+  const saveState = utils.isNEString(options.saveState)
 
   if (saveState) {
-    let stat = storage.get('bw_' + options.saveState + '_state')
+    const stat = storage.get('bw_' + options.saveState + '_state')
 
-    console.log(options.saveState, stat)
     if (_.isObject(stat)) {
       _.each(stat, (value, key) => {
         state[key] = value
@@ -317,8 +316,8 @@ function createWindow (options) {
     }
   }
 
-  let win = new BrowserWindow(options)
-  let urlArgs = []
+  const win = new BrowserWindow(options)
+  const urlArgs = []
   _.each(options.urlArgs, (value, key) => {
     urlArgs.push(`${key}=${value}`)
   })
@@ -328,54 +327,62 @@ function createWindow (options) {
     return win
   }
 
+  const savestate = function () {
+    storage.set('bw_' + options.saveState + '_state', state)
+  }
+
   win.on('moved', () => {
-    let pos = win.getPosition()
+    const pos = win.getPosition()
 
     state.x = pos[0]
     state.y = pos[1]
+    savestate()
   })
 
   if (options.resizable !== false) {
     win.on('resize', () => {
-      let pos = win.getPosition()
-      let size = win.getSize()
+      const pos = win.getPosition()
+      const size = win.getSize()
 
       state.x = pos[0]
       state.y = pos[1]
       state.width = size[0]
       state.height = size[1]
+      savestate()
     })
   }
 
   if (options.maximizable !== false) {
     win.on('maximize', () => {
       state.maximize = true
+      savestate()
     })
 
     win.on('unmaximize', () => {
       state.maximize = false
+      savestate()
     })
   }
 
   if (options.fullscreenable !== false) {
     win.on('enter-full-screen', () => {
       state.fullscreen = true
+      savestate()
     })
 
     win.on('leave-full-screen', () => {
       state.fullscreen = false
+      savestate()
     })
   }
 
-  win.on('closed', () => {
-    storage.set('bw_' + options.saveState + '_state', state)
-  })
+  win.on('closed', savestate)
 
   return win
 }
 
 function warnDialog (message) {
-  let msg = message.split('\n', 2)
+  const msg = message.split('\n', 2)
 
   dialog.showMessageBox({
     type: 'info',
