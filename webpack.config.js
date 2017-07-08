@@ -22,6 +22,7 @@ module.exports = {
       {
         test: /\.vue$/,
         loader: 'vue-loader',
+        exclude: /node_modules/,
         options: {
           esModule: true
         }
@@ -29,6 +30,10 @@ module.exports = {
       {
         test: /\.less$/i,
         use: ['style-loader', 'css-loader', 'less-loader']
+      },
+      {
+        test: /\.(jpe?g|png|gif|svg|woff)$/i,
+        use: 'url-loader?limit=8192&name=assets/[name].[ext]?[hash]'
       }
     ]
   },
