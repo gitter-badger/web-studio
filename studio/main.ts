@@ -4,10 +4,11 @@ import { ipcRenderer } from 'electron'
 import editor from './editor'
 import welcome from './welcome'
 import preferences from './preferences'
-import './assets/style/ui.less'
-import './assets/style/elements.less'
+import './assets/ui.less'
+import './assets/elements.less'
 
 interface AppState extends Vue {
+  isMac: boolean,
   windowWidth: number,
   windowHeight: number,
   leftAsideWidth: number,
@@ -19,6 +20,7 @@ interface AppState extends Vue {
 const initState = ipcRenderer.sendSync('project-property', ['leftAsideWidth', 'showLayers', 'showInspector', 'previewMode']) as AppState
 const $state = new Vue({
   data: {
+    isMac: process.platform === 'darwin',
     windowWidth: window.innerWidth,
     windowHeight: window.innerHeight,
     leftAsideWidth: initState.leftAsideWidth,
@@ -45,6 +47,7 @@ window.addEventListener('resize', () => {
 
 Vue.mixin({
   computed: {
+    isMac: () => $state.isMac,
     windowWidth: () => $state.windowWidth,
     windowHeight: () => $state.windowHeight,
     leftAsideWidth: () => $state.leftAsideWidth,
