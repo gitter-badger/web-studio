@@ -191,14 +191,16 @@ let helpMenu = {
   role: 'help',
   submenu: [
     {
-      label: 'Reload Studio',
-      role: 'reload'
+      label: 'Web Studio Website',
+      click () {
+        shell.openExternal('http://ws.x-stud.io')
+      }
     },
     {
-      role: 'toggledevtools'
-    },
-    {
-      type: 'separator'
+      label: 'Created by studio X',
+      click () {
+        shell.openExternal('http://x-stud.io')
+      }
     },
     {
       label: 'Report an Issue...',
@@ -215,16 +217,14 @@ System ${process.platform} ${process.arch} ${os.release()}`
       }
     },
     {
-      label: 'Web Studio Website',
-      click () {
-        shell.openExternal('http://ws.x-stud.io')
-      }
+      type: 'separator'
     },
     {
-      label: 'Created by studio X',
-      click () {
-        shell.openExternal('http://x-stud.io')
-      }
+      label: 'Reload Studio',
+      role: 'reload'
+    },
+    {
+      role: 'toggledevtools'
     }
   ]
 }
