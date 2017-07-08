@@ -4,6 +4,7 @@ const menu = require('./menu')
 const storage = require('./storage')
 const studio = require('./studio')
 const htmlpdf = require('./x/htmlpdf')
+const { default: installExtension, VUEJS_DEVTOOLS } = require('electron-devtools-installer')
 
 global.env = {
   isDev: process.defaultApp || /[\\/]electron-prebuilt[\\/]/.test(process.execPath) || /[\\/]electron[\\/]/.test(process.execPath)
@@ -24,9 +25,6 @@ app.on('ready', () => {
   storage.read()
   menu.install()
 
-  // todo: add vue.js devTool
-  // BrowserWindow.addDevToolsExtension(path)
-
   ipcMain.on('create-pdf', (e, filepath, html, css) => {
     htmlpdf.create(filepath, html, css + '\n.page-break{page-break-before: always!important;}', () => {
       shell.openExternal(filepath)
@@ -34,13 +32,19 @@ app.on('ready', () => {
   })
 
   if (global.env.isDev) {
-    dev.start()
-    let checkDevAddrInterval = setInterval(() => {
-      if (dev.addr() !== null) {
-        clearInterval(checkDevAddrInterval)
-        studio.init(openFile)
-      }
-    }, 100)
+    installExtension(VUEJS_DEVTOOLS).then((name) => {
+      console.log(`Added extension:  ${name}`)
+
+      dev.start()
+      let checkDevAddrInterval = setInterval(() => {
+        if (dev.addr() !== null) {
+          clearInterval(checkDevAddrInterval)
+          studio.init(openFile)
+        }
+      }, 100)
+    }).catch((err) => {
+      throw (err)
+    })
   } else {
     studio.init(openFile)
   }

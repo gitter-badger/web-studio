@@ -6,7 +6,7 @@ let wdsProcess = null
 let wdsAddr = null
 
 function start () {
-  console.log('start webpack-dev-server process...')
+  console.log('Start webpack-dev-server process...')
   wdsProcess = spawn('webpack-dev-server', ['--hot'], {
     'PATH': `${localNodeBinPath}${path.delimiter}${process.env.PATH}`,
     'NODE_ENV': 'development'
@@ -31,7 +31,7 @@ function start () {
 
 function stop () {
   if (wdsProcess !== null) {
-    console.log('stop webpack-dev-server process...')
+    console.log('Stop webpack-dev-server process...')
     wdsProcess.kill()
     wdsProcess = null
   }
