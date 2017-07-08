@@ -32,23 +32,28 @@ app.on('ready', () => {
   })
 
   if (global.env.isDev) {
+    console.log(`Installing devtools extensions...`)
     installExtension(VUEJS_DEVTOOLS).then((name) => {
       console.log(`Added extension:  ${name}`)
-
-      dev.start()
-      let checkDevAddrInterval = setInterval(() => {
-        if (dev.addr() !== null) {
-          clearInterval(checkDevAddrInterval)
-          studio.init(openFile)
-        }
-      }, 100)
+      startDev()
     }).catch((err) => {
-      throw (err)
+      console.log(err)
+      startDev()
     })
   } else {
     studio.init(openFile)
   }
 })
+
+function startDev () {
+  dev.start()
+  let checkDevAddrInterval = setInterval(() => {
+    if (dev.addr() !== null) {
+      clearInterval(checkDevAddrInterval)
+      studio.init(openFile)
+    }
+  }, 100)
+}
 
 // On macOS it's common to re-create a window in the app when the dock icon is clicked and there are no other windows open.
 app.on('activate', () => {
