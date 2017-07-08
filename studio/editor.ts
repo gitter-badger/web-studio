@@ -10,17 +10,17 @@ import editorInsert from './ui/editor-insert.vue'
 
 const template = `
 <div id="app">
-    <editor-title-bar :documentTitle="documentTitle" :edited="edited" :page="page" @selection="selected"></editor-title-bar>
-    <editor-layers :extends="web.extends" :pages="web.pages" @selection="selected" v-if="showLayers"></editor-layers>
-    <editor-canvas :page="page" @selection="selected"></editor-canvas>
-    <editor-inspector :selection="selection" v-if="showInspector"></editor-inspector>
-    <editor-insert @insert="insert" v-if="!previewMode"></editor-insert>
+    <editor-layers :documentName="documentName" :web="web" @selection="selected" v-show="showLayers && !previewMode"></editor-layers>
+    <editor-title-bar :page="page"></editor-title-bar>
+    <editor-canvas :page="page" @selection="selected" v-if="selection !== null"></editor-canvas>
+    <editor-inspector :selection="selection" v-show="showInspector && !previewMode && selection !== null"></editor-inspector>
+    <editor-insert @insert="insert" v-show="!previewMode" v-if="selection !== null"></editor-insert>
 </div>
 `
 
 interface EditorComponent extends Vue {
     pid: number
-    documentTitle: string
+    documentName: string
     web: Web
     page: WebPage
     selection: WebPage | WebLayer
@@ -46,7 +46,7 @@ export default {
     data() {
         return {
             pid: NaN,
-            documentTitle: null,
+            documentName: null,
             meta: null,
             page: null,
             selection: null,
@@ -84,16 +84,16 @@ export default {
         }
 
         vm.pid = pid
-        vm.documentTitle = query.documentTitle
+        vm.documentName = query.documentName
         vm.web = _.cloneDeep(initialWeb)
         vm.$watch('meta', (newMeta: Web, oldMeta: Web) => {
             vm.edited = true
             ipcRenderer.send('project-meta', pid, newMeta)
             console.log(newMeta, oldMeta) // todo: log meta change
         }, { deep: true })
-        ipcRenderer.on('saved', (documentTitle: string) => {
+        ipcRenderer.on('saved', (documentName: string) => {
             vm.edited = false
-            vm.documentTitle = documentTitle
+            vm.documentName = documentName
         })
         ipcRenderer.on('undo', () => {
             vm.undo()
