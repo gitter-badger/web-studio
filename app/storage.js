@@ -44,13 +44,18 @@ module.exports = {
 
     return def
   },
-  set: (key, value) => {
+  set: (key, value, saveImmediate) => {
     if (!utils.isNEString(key) || value === undefined) {
       return
     }
 
     storage[key] = value
-    delaySave()
+
+    if (saveImmediate) {
+      save()
+    } else {
+      delaySave()
+    }
   },
   delete: (key) => {
     if (!utils.isNEString(key)) {
