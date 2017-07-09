@@ -37,10 +37,13 @@ declare interface WebElement extends ElementPosition {
 }
 
 declare interface Web {
-    extends: Web[]
     pages: WebPage[]
     components: WebComponent[]
+    extends: Web[]
     assetFiles: WebAssetFile[]
+    pagesCollapsed: boolean
+    componentsCollapsed: boolean
+    extendsCollapsed: boolean,
 }
 
 declare interface WebPage {
