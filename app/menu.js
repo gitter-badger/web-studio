@@ -89,28 +89,29 @@ let editMenu = {
   label: 'Edit',
   submenu: [
     {
-      role: 'undo'
+      label: 'Undo',
+      accelerator: accelerators.undo,
+      check (project) {
+        return project.editHistory.length > 0 && project.editHistoryPointer > 0
+      },
+      click () {
+        studio.undo()
+      },
+      enabled: false
     },
     {
-      role: 'redo'
+      label: 'Redo',
+      accelerator: accelerators.redo,
+      check (project) {
+        return project.editHistory.length > 0 && project.editHistoryPointer < project.editHistory.length - 1
+      },
+      click () {
+        studio.redo()
+      },
+      enabled: false
     },
     {
       type: 'separator'
-    },
-    {
-      role: 'cut'
-    },
-    {
-      role: 'copy'
-    },
-    {
-      role: 'paste'
-    },
-    {
-      role: 'delete'
-    },
-    {
-      role: 'selectall'
     }
   ]
 }
@@ -136,7 +137,7 @@ let viewMenu = {
     {
       label: 'Show Layers',
       type: 'checkbox',
-      projectProperty: 'showLayers',
+      checkprojectProperty: 'showLayers',
       click (menuItem) {
         storage.set('showLayers', menuItem.checked)
         studio.showLayers(menuItem.checked)
@@ -147,7 +148,7 @@ let viewMenu = {
     {
       label: 'Show Inspector',
       type: 'checkbox',
-      projectProperty: 'showInspector',
+      checkprojectProperty: 'showInspector',
       click (menuItem) {
         storage.set('showInspector', menuItem.checked)
         studio.showInspector(menuItem.checked)
@@ -158,7 +159,7 @@ let viewMenu = {
     {
       label: 'Preview Mode',
       type: 'checkbox',
-      projectProperty: 'previewMode',
+      checkprojectProperty: 'previewMode',
       click (menuItem) {
         studio.previewMode(menuItem.checked)
       },
@@ -398,14 +399,18 @@ function clearRecentFiles () {
   updateMenu()
 }
 
-function enable (project) {
+function update (project) {
   _.each(appMenuList, (menu) => {
     _.each(menu.submenu, (item) => {
       if ('enabled' in item) {
-        if (item.type === 'checkbox' && 'projectProperty' in item && item.projectProperty in project) {
-          item.checked = !!project[item.projectProperty]
+        if (item.type === 'checkbox' && utils.isNEString(item.checkprojectProperty) && item.checkprojectProperty in project) {
+          item.checked = project[item.checkprojectProperty]
+          item.enabled = true
+        } else if (_.isFunction(item.check)) {
+          item.enabled = item.check(project) === true
+        } else {
+          item.enabled = true
         }
-        item.enabled = true
       }
     })
   })
@@ -438,6 +443,6 @@ module.exports = {
   addRecentFile,
   removeRecentFile,
   clearRecentFiles,
-  enable,
+  update,
   disable
 }
