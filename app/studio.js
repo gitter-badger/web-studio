@@ -12,19 +12,82 @@ let currentProject = null
 let welcomeWindow = null
 let projectIdIndex = 0
 
+app.on('ready', () => {
+  const menu = require('./menu')
+
+  ipcMain.on('app-storage', (e, key, value) => {
+    if (!utils.isNEString(key)) {
+      e.returnValue = null
+      return
+    }
+
+    if (!_.isUndefined(value)) {
+      storage.set(key, value)
+      e.returnValue = true
+      return
+    }
+
+    e.returnValue = storage.get(key)
+  })
+
+  ipcMain.on('project-property', (e, pid, v, noRecording) => {
+    const project = projects.get(pid)
+
+    if (!project) {
+      e.returnValue = {}
+      return
+    }
+
+    if (utils.isNEString(v)) {
+      if (v in project) {
+        e.returnValue = project[v]
+      } else {
+        e.returnValue = null
+      }
+    } else if (_.isArray(v)) {
+      const returnValue = {}
+      _.each(v, function (key) {
+        if (utils.isNEString(key) && key in project) {
+          returnValue[key] = project[key]
+        }
+      })
+      e.returnValue = returnValue
+    } else if (_.isPlainObject(v)) {
+      _.each(v, (value, key) => {
+        if (key in project) {
+          project[key] = value
+        }
+        if (key === 'meta') {
+          if (noRecording !== true) {
+            project.editHistory.splice(project.editHistoryPointer, project.editHistory.length - 1 - project.editHistoryPointer, project.meta)
+            project.editHistoryPointer++
+          }
+          project.edited = true
+          menu.update(project)
+        }
+      })
+      e.returnValue = true
+    } else {
+      e.returnValue = false
+    }
+  })
+})
+
 class Project {
   constructor (pid, savePath, meta, bw) {
     this.id = pid
     this.bw = bw
     this.savePath = savePath
     this.meta = Object.assign({
-      assetFiles: [],
-      layers: []
+      assetFiles: []
     }, meta)
     this.leftAsideWidth = storage.get('leftAsideWidth', 300)
     this.showLayers = storage.get('showLayers', true)
     this.showInspector = storage.get('showInspector', true)
     this.previewMode = false
+    this.edited = false
+    this.editHistory = [this.meta]
+    this.editHistoryPointer = 0
   }
 
   send () {
@@ -39,11 +102,11 @@ class Project {
   }
 
   undo () {
-    this.send('undo')
+    console.log('undo')
   }
 
   redo () {
-    this.send('undo')
+    console.log('redo')
   }
 
   save (as) {
@@ -84,7 +147,9 @@ class Project {
           }
 
           _self.savePath = newPath
-          _self.send('saved', path.basename(newPath))
+          _self.edited = false
+          _self.bw.setTitle(path.basename(newPath))
+          _self.send('saved', newPath)
           done()
         })
       }
@@ -203,15 +268,13 @@ function openProject (projectPath, projectMeta) {
   }
 
   const pid = ++projectIdIndex
-  const documentName = isNew ? 'Untitled.web' : path.basename(projectPath)
   project = new Project(pid, projectPath, projectMeta, createWindow({
     urlArgs: {
-      documentName,
       project: pid
     },
     minWidth: 800,
     minHeight: 400,
-    title: documentName,
+    title: isNew ? 'Untitled.web' : path.basename(projectPath),
     titleBarStyle: 'hidden-inset',
     frame: process.platform === 'darwin',
     acceptFirstMouse: true,
@@ -222,10 +285,10 @@ function openProject (projectPath, projectMeta) {
     projects.delete(project.id)
   })
 
-  menu.enable(project)
+  menu.update(project)
   project.bw.on('focus', () => {
     currentProject = project
-    menu.enable(project)
+    menu.update(project)
   })
 
   currentProject = project
@@ -439,76 +502,6 @@ function openFile (path, flags) {
   })
 }
 
-function isProjectMetaObject (obj) {
-  if (!_.isPlainObject(obj)) {
-    return false
-  }
-
-  return true
-}
-
-app.on('ready', () => {
-  ipcMain.on('app-storage', (e, key, value) => {
-    if (!utils.isNEString(key)) {
-      e.returnValue = null
-      return
-    }
-
-    if (!_.isUndefined(value)) {
-      storage.set(key, value)
-      e.returnValue = true
-      return
-    }
-
-    e.returnValue = storage.get(key)
-  })
-
-  ipcMain.on('project-property', (e, v) => {
-    if (!currentProject) {
-      e.returnValue = {}
-      return
-    }
-
-    if (_.isArray(v)) {
-      const returnValue = {}
-      _.each(v, function (key) {
-        if (utils.isNEString(key) && key in currentProject) {
-          returnValue[key] = currentProject[key]
-        }
-      })
-      e.returnValue = returnValue
-      return
-    }
-
-    if (_.isPlainObject(v)) {
-      _.each(v, (value, key) => {
-        if (key in currentProject) {
-          currentProject[key] = value
-        }
-      })
-      e.returnValue = true
-    }
-  })
-
-  ipcMain.on('project-meta', (e, pid, meta) => {
-    const project = projects.get(pid)
-
-    if (!project) {
-      e.returnValue = null
-      return
-    }
-
-    if (isProjectMetaObject(meta)) {
-      project.meta = meta
-      e.returnValue = true
-      return
-    }
-
-    project.meta.savePath = project.savePath
-    e.returnValue = project.meta
-  })
-})
-
 module.exports = {
   init,
   config,
@@ -531,6 +524,16 @@ module.exports = {
   press () {
     if (currentProject) {
       currentProject.press()
+    }
+  },
+  undo () {
+    if (currentProject) {
+      currentProject.undo()
+    }
+  },
+  redo () {
+    if (currentProject) {
+      currentProject.redo()
     }
   },
   showLayers (ok) {
