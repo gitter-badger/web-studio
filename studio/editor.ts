@@ -1,5 +1,6 @@
 import { ipcRenderer } from 'electron'
 import url from 'url'
+import path from 'path'
 import _ from 'lodash'
 import Vue, { ComponentOptions } from 'vue'
 import editorTitleBar from './ui/editor-titleBar.vue'
@@ -9,32 +10,119 @@ import editorInspector from './ui/editor-inspector.vue'
 import editorInsert from './ui/editor-insert.vue'
 
 const template = `
-<div id="app">
-    <editor-layers :documentName="documentName" :web="web" @selection="selected" v-show="showLayers && !previewMode"></editor-layers>
-    <editor-title-bar :page="page"></editor-title-bar>
-    <editor-canvas :page="page" @selection="selected" v-if="selection !== null"></editor-canvas>
-    <editor-inspector :selection="selection" v-show="showInspector && !previewMode && selection !== null"></editor-inspector>
-    <editor-insert @insert="insert" v-show="!previewMode" v-if="selection !== null"></editor-insert>
+<div id="ws-app">
+    <editor-layers :documentName="documentName" :web="web" @selected="selected" @press="press" v-show="showLayers && !previewMode"></editor-layers>
+    <editor-title-bar :edit-object="editObject"></editor-title-bar>
+    <editor-canvas :edit-object="editObject" :selections="selections" @selected="selected" v-if="selections !== null"></editor-canvas>
+    <editor-inspector :selections="selections" v-show="showInspector && !previewMode && selections !== null"></editor-inspector>
+    <editor-insert @insert="insert" v-show="!previewMode" v-if="selections !== null"></editor-insert>
 </div>
 `
 
-interface EditorComponent extends Vue {
-    pid: number
-    documentName: string
+const defaultWeb = {
+    pages: [],
+    components: [],
+    extends: [],
+    pagesCollapsed: false,
+    componentsCollapsed: true,
+    extendsCollapsed: true,
+}
+
+interface Editor extends Vue {
     web: Web
-    page: WebPage
-    selection: WebPage | WebLayer
-    edited: boolean
+    editObject: Web | WebPage | WebComponent
+    selections: WebPage[] | WebLayer[]
+    watchWeb(): void
+    unWatchWeb(): void
+    _webWatcher(): void
+    press(): void
     insert(type: string): void
     undo(): void
     redo(): void
     selected(indexs: number[][]): void
 }
 
-let initialWeb: Web
+interface EditorState extends Vue {
+    meta: Web,
+    savePath: string
+    documentName: string
+    isMac: boolean,
+    windowWidth: number,
+    windowHeight: number,
+    leftAsideWidth: number,
+    edited: boolean,
+    showLayers: boolean,
+    showInspector: boolean,
+    previewMode: boolean,
+}
+
+const pid = parseInt(url.parse(location.href, true).query.project, 10)
+const projectRawProperty = ipcRenderer.sendSync('project-property', pid, ['meta', 'edited', 'savePath', 'leftAsideWidth', 'showLayers', 'showInspector', 'previewMode']) as EditorState
+const $state = new Vue({
+    data: {
+        documentName: parseDocumentName(projectRawProperty.savePath),
+        edited: projectRawProperty.edited,
+        isMac: process.platform === 'darwin',
+        windowWidth: window.innerWidth,
+        windowHeight: window.innerHeight,
+        leftAsideWidth: projectRawProperty.leftAsideWidth,
+        showLayers: projectRawProperty.showLayers,
+        showInspector: projectRawProperty.showInspector,
+        previewMode: projectRawProperty.previewMode,
+    },
+}) as EditorState
+
+let editorVM: Editor
+
+window.addEventListener('resize', () => {
+    $state.windowWidth = window.innerWidth
+    $state.windowHeight = window.innerHeight
+})
+
+Vue.mixin({
+    computed: {
+        documentName: () => $state.documentName,
+        edited: () => $state.edited,
+        isMac: () => $state.isMac,
+        windowWidth: () => $state.windowWidth,
+        windowHeight: () => $state.windowHeight,
+        leftAsideWidth: () => $state.leftAsideWidth,
+        showLayers: () => $state.showLayers,
+        showInspector: () => $state.showInspector,
+        previewMode: () => $state.previewMode,
+    },
+    methods: {
+        $alterLeftAsideWidth(n: number) {
+            let width = $state.leftAsideWidth + n
+
+            if (width < 180) {
+                width = 180
+            } else if (width > $state.windowWidth / 2) {
+                width = $state.windowWidth / 2
+            }
+
+            ipcRenderer.send('app-storage', 'leftAsideWidth', width)
+            $state.leftAsideWidth = width
+        },
+        $noRecordUpdateWeb(container: any, key: string, value: any) {
+            editorVM.unWatchWeb()
+            Vue.set(container, key, value)
+            ipcRenderer.send('project-property', pid, { meta: editorVM.web }, true)
+            $state.edited = true
+            editorVM.watchWeb()
+        },
+    },
+})
+
+function parseDocumentName(savePath: string): string {
+    if (!_.isString(savePath) || savePath === '') {
+        return 'Untitled.web'
+    }
+    return path.basename(savePath)
+}
 
 export default {
-    name: 'editor-editor',
+    name: 'ws-editor',
     template,
     components: {
         editorTitleBar,
@@ -45,15 +133,15 @@ export default {
     },
     data() {
         return {
-            pid: NaN,
-            documentName: null,
-            meta: null,
-            page: null,
-            selection: null,
-            edited: false,
+            web: _.assign({}, projectRawProperty.meta, defaultWeb),
+            editObject: null,
+            selections: null,
         }
     },
     methods: {
+        press() {
+            console.log('press')
+        },
         insert(type: string) {
             console.log(type)
         },
@@ -63,43 +151,46 @@ export default {
         distribute(direction: string) {
             console.log(direction)
         },
-        undo() {
-            console.log('undo')
-        },
-        redo() {
-            console.log('redo')
-        },
         selected(indexs: number[][]) {
             console.log(indexs)
+        },
+        watchWeb() {
+            this._webWatcher = this.$watch('web', (web: Web) => {
+                if ('fromMainProcess' in web) {
+                    this.$delete(web, 'fromMainProcess')
+                } else {
+                    ipcRenderer.send('project-property', pid, { meta: web })
+                }
+
+                $state.edited = true
+            }, { deep: true })
+        },
+        unWatchWeb() {
+            if (_.isFunction(this._webWatcher)) {
+                this._webWatcher()
+                delete this._webWatcher
+            }
         },
     },
     created() {
         const vm = this
-        const query = url.parse(location.href, true).query
-        const pid = parseInt(query.project, 10)
-
-        initialWeb = ipcRenderer.sendSync('project-meta', pid) as Web
-        if (!initialWeb.pages) {
-            initialWeb.pages = []
-        }
-
-        vm.pid = pid
-        vm.documentName = query.documentName
-        vm.web = _.cloneDeep(initialWeb)
-        vm.$watch('meta', (newMeta: Web, oldMeta: Web) => {
-            vm.edited = true
-            ipcRenderer.send('project-meta', pid, newMeta)
-            console.log(newMeta, oldMeta) // todo: log meta change
-        }, { deep: true })
-        ipcRenderer.on('saved', (documentName: string) => {
-            vm.edited = false
-            vm.documentName = documentName
+        editorVM = vm
+        ipcRenderer.on('project-property', (e: Event, key: string, value: any) => {
+            switch (key) {
+                case 'showLayers':
+                case 'showInspector':
+                case 'previewMode':
+                    $state[key] = value as boolean
+                case 'meta':
+                    vm.web = _.assign({}, value, defaultWeb, { fromMainProcess: true }) as Web
+                    break
+                default:
+            }
         })
-        ipcRenderer.on('undo', () => {
-            vm.undo()
-        })
-        ipcRenderer.on('redo', () => {
-            vm.redo()
+        vm.watchWeb()
+        ipcRenderer.on('saved', (savePath: string) => {
+            $state.documentName = parseDocumentName(savePath)
+            $state.edited = false
         })
     },
-} as ComponentOptions<EditorComponent>
+} as ComponentOptions<Editor>
