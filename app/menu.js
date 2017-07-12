@@ -135,12 +135,12 @@ let viewMenu = {
       type: 'separator'
     },
     {
-      label: 'Show Layers',
+      label: 'Show Side Bar',
       type: 'checkbox',
-      checkprojectProperty: 'showLayers',
+      checkprojectProperty: 'showSidebar',
       click (menuItem) {
-        storage.set('showLayers', menuItem.checked)
-        studio.showLayers(menuItem.checked)
+        storage.set('showSidebar', menuItem.checked)
+        studio.showSidebar(menuItem.checked)
       },
       enabled: false,
       checked: false
