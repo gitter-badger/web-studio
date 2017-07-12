@@ -1,7 +1,17 @@
-// Place your settings in this file to overwrite default and user settings.
 {
+    // Place your settings in this file to overwrite default and user settings.
+    "editor.insertSpaces": false,
+    "files.eol": "\n",
+    "files.trimTrailingWhitespace": true,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/node_modules": true
+    },
     "javascript.validate.enable": false,
+    "typescript.check.tscVersion": false,
     "standard.autoFixOnSave": true,
+    "tslint.enable": true,
     "tslint.autoFixOnSave": true,
     "vetur.format.styleInitialIndent": true,
     "vetur.format.scriptInitialIndent": true
