@@ -3,6 +3,31 @@ declare module '*.vue' {
     export default Vue
 }
 
+declare interface EditorScope {
+    documentName: string
+    web: Web
+    currentWebObject: Web | WebPage | WebComponent
+    selections: WebLayer[]
+    edited: boolean
+    showSidebar: boolean
+    showInspector: boolean
+    previewMode: boolean
+    showLayers: string
+    sideBarWidth: number
+    windowWidth: number
+    windowHeight: number
+    fullscreen: boolean
+    isMac: boolean
+    $press(): void
+    $insert(type: string): void
+    $align(direction: string): void
+    $distribute(direction: string): void
+    $setSelections(sel: WebLayer | WebLayer[]): void
+    $appendSelections(sel: WebLayer | WebLayer[]): void
+    $showLayers(type: string): void
+    $alterSiderBarWidth(n: number): void
+}
+
 declare interface ElementPosition {
     top: number
     bottom: number
@@ -37,33 +62,33 @@ declare interface WebElement extends ElementPosition {
 }
 
 declare interface Web {
+    title: string
+    documentName: string
     pages: WebPage[]
     components: WebComponent[]
     extends: Web[]
     assetFiles: WebAssetFile[]
-    pagesCollapsed: boolean
-    componentsCollapsed: boolean
-    extendsCollapsed: boolean,
+    meta: any
 }
 
 declare interface WebPage {
-    routeExp: string
     title: string
-    extraHeadTag: string[]
+    routeExp: string
     layers: WebLayer[]
-}
-
-declare interface WebLayer extends WebElement {
-    type: string
-    input: any
-    locked: boolean
-    show: boolean
-    collapsed: boolean
-    children: WebLayer[]
+    meta: any
 }
 
 declare interface WebComponent extends WebLayer {
+    input: any
+}
+
+declare interface WebLayer extends WebElement {
     title: string
+    type: string
+    locked: boolean
+    hidden: boolean
+    collapsed: boolean
+    children: WebLayer[]
 }
 
 declare interface WebAssetFile {
