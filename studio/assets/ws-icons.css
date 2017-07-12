@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'ws-icons';
-  src: url('./ws-icons.woff') format('woff');
+  src: url('./ws-icons.woff2') format('woff');
   font-weight: normal;
   font-style: normal;
 }
@@ -20,12 +20,21 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-.icon-press:before {
+.icon-layers:before {
   content: "\e900";
 }
-.icon-arrow-collapse:before {
+.icon-box:before {
   content: "\e901";
 }
-.icon-arrow-expand:before {
+.icon-plugin:before {
   content: "\e902";
+}
+.icon-press:before {
+  content: "\e903";
+}
+.icon-arrow-collapse:before {
+  content: "\e904";
+}
+.icon-arrow-expand:before {
+  content: "\e905";
 }
