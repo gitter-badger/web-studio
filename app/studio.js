@@ -81,13 +81,15 @@ class Project {
     this.meta = Object.assign({
       assetFiles: []
     }, meta)
-    this.leftAsideWidth = storage.get('leftAsideWidth', 300)
-    this.showLayers = storage.get('showLayers', true)
+    this.sideBarWidth = storage.get('sideBarWidth', 300)
+    this.showSidebar = storage.get('showSidebar', true)
     this.showInspector = storage.get('showInspector', true)
+    this.showLayers = 'pages'
     this.previewMode = false
     this.edited = false
     this.editHistory = [this.meta]
     this.editHistoryPointer = 0
+    this.fullscreen = bw.fullscreen
   }
 
   send () {
@@ -96,7 +98,7 @@ class Project {
 
   setBoth (key, value) {
     if (key in this) {
-      this.key = value
+      this[key] = value
       this.send('project-property', key, value)
     }
   }
@@ -278,17 +280,26 @@ function openProject (projectPath, projectMeta) {
     titleBarStyle: 'hidden-inset',
     frame: process.platform === 'darwin',
     acceptFirstMouse: true,
+    fullscreenable: true,
     saveState: 'editor'
   }))
 
-  project.bw.on('closed', () => {
-    projects.delete(project.id)
+  project.bw.on('enter-full-screen', () => {
+    project.setBoth('fullscreen', true)
+  })
+
+  project.bw.on('leave-full-screen', () => {
+    project.setBoth('fullscreen', false)
   })
 
   menu.update(project)
   project.bw.on('focus', () => {
     currentProject = project
     menu.update(project)
+  })
+
+  project.bw.on('closed', () => {
+    projects.delete(project.id)
   })
 
   currentProject = project
@@ -312,6 +323,9 @@ function init (openFile) {
   }
 
   welcomeWindow = createWindow({
+    urlArgs: {
+      welcome: true
+    },
     width: 800,
     height: 400,
     frame: false,
@@ -380,19 +394,22 @@ function createWindow (options) {
   }
 
   const win = new BrowserWindow(options)
+
   const urlArgs = []
   _.each(options.urlArgs, (value, key) => {
     urlArgs.push(`${key}=${value}`)
   })
-  win.loadURL((dev.addr() ? path.join(dev.addr(), 'app') : 'file://' + path.resolve(__dirname, 'index.html')) + (urlArgs.length > 0 ? '?' + urlArgs.join('&') : ''))
+  let url = global.env.isDev ? path.join(dev.addr(), 'app/index.html') : 'file://' + path.resolve(__dirname, 'index.html')
+  if (urlArgs.length > 0) {
+    url += '?' + urlArgs.join('&')
+  }
+  win.loadURL(url)
 
   if (!saveState) {
     return win
   }
 
-  const savestate = function () {
-    storage.set('bw_' + options.saveState + '_state', state)
-  }
+  const savestate = () => storage.set('bw_' + options.saveState + '_state', state)
 
   win.on('moved', () => {
     const pos = win.getPosition()
@@ -426,20 +443,6 @@ function createWindow (options) {
       savestate()
     })
   }
-
-  if (options.fullscreenable !== false) {
-    win.on('enter-full-screen', () => {
-      state.fullscreen = true
-      savestate()
-    })
-
-    win.on('leave-full-screen', () => {
-      state.fullscreen = false
-      savestate()
-    })
-  }
-
-  win.on('closed', savestate)
 
   return win
 }
@@ -536,9 +539,9 @@ module.exports = {
       currentProject.redo()
     }
   },
-  showLayers (ok) {
+  showSidebar (ok) {
     if (currentProject) {
-      currentProject.setBoth('showLayers', ok)
+      currentProject.setBoth('showSidebar', ok)
     }
   },
   showInspector (ok) {
