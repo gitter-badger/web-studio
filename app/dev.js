@@ -13,19 +13,17 @@ function start () {
   })
   let output = ''
   wdsProcess.stdout.on('data', (data) => {
-    data = String(data)
     if (wdsAddr === null) {
-      output += data
-      output.replace(/http:\/\/[a-z0-9:/]+/i, function (m) {
+      output += String(data)
+      output.replace(/http:\/\/(localhost|127\.0\.0\.1):\d+/i, function (m) {
         wdsAddr = m
         output = null
       })
     }
-
-    console.log(data)
+    process.stdout.write(data)
   })
   wdsProcess.stderr.on('data', (data) => {
-    console.log(String(data))
+    process.stdout.write(data)
   })
 }
 
