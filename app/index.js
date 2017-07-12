@@ -43,19 +43,20 @@ app.on('ready', () => {
   } else {
     studio.init(openFile)
   }
+
+  function startDev () {
+    dev.start()
+    let checkDevAddrInterval = setInterval(() => {
+      if (dev.addr() !== null) {
+        clearInterval(checkDevAddrInterval)
+        studio.init(openFile)
+      }
+    }, 100)
+  }
 })
 
-function startDev () {
-  dev.start()
-  let checkDevAddrInterval = setInterval(() => {
-    if (dev.addr() !== null) {
-      clearInterval(checkDevAddrInterval)
-      studio.init(openFile)
-    }
-  }, 100)
-}
-
-// On macOS it's common to re-create a window in the app when the dock icon is clicked and there are no other windows open.
+// On macOS it's common to re-create a window in the app
+// when the dock icon is clicked and there are no other windows open.
 app.on('activate', () => {
   studio.init()
 })
