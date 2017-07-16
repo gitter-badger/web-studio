@@ -6,8 +6,8 @@ import './assets/ui.less'
 
 const urlQuery = url.parse(window.location.href, true).query
 
-if ('project' in urlQuery && /^\d+$/.test(urlQuery.project)) {
-  editor()
+if ('editor' in urlQuery && /^\d+$/.test(urlQuery.editor)) {
+  editor(parseInt(urlQuery.editor))
 } else if ('preferences' in urlQuery) {
   preferences()
 } else {

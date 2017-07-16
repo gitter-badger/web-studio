@@ -91,8 +91,8 @@ let editMenu = {
     {
       label: 'Undo',
       accelerator: accelerators.undo,
-      check (project) {
-        return project.editHistory.length > 0 && project.editHistoryPointer > 0
+      check (editor) {
+        return editor.editHistory.length > 0 && editor.editHistoryPointer > 0
       },
       click () {
         studio.undo()
@@ -102,8 +102,8 @@ let editMenu = {
     {
       label: 'Redo',
       accelerator: accelerators.redo,
-      check (project) {
-        return project.editHistory.length > 0 && project.editHistoryPointer < project.editHistory.length - 1
+      check (editor) {
+        return editor.editHistory.length > 0 && editor.editHistoryPointer < editor.editHistory.length - 1
       },
       click () {
         studio.redo()
@@ -137,7 +137,7 @@ let viewMenu = {
     {
       label: 'Show Side Bar',
       type: 'checkbox',
-      checkprojectProperty: 'showSidebar',
+      checkEditorProperty: 'showSidebar',
       click (menuItem) {
         storage.set('showSidebar', menuItem.checked)
         studio.showSidebar(menuItem.checked)
@@ -148,7 +148,7 @@ let viewMenu = {
     {
       label: 'Show Inspector',
       type: 'checkbox',
-      checkprojectProperty: 'showInspector',
+      checkEditorProperty: 'showInspector',
       click (menuItem) {
         storage.set('showInspector', menuItem.checked)
         studio.showInspector(menuItem.checked)
@@ -159,7 +159,7 @@ let viewMenu = {
     {
       label: 'Preview Mode',
       type: 'checkbox',
-      checkprojectProperty: 'previewMode',
+      checkEditorProperty: 'previewMode',
       click (menuItem) {
         studio.previewMode(menuItem.checked)
       },
@@ -399,15 +399,15 @@ function clearRecentFiles () {
   updateMenu()
 }
 
-function update (project) {
+function update (editor) {
   _.each(appMenuList, (menu) => {
     _.each(menu.submenu, (item) => {
       if ('enabled' in item) {
-        if (item.type === 'checkbox' && utils.isNEString(item.checkprojectProperty) && item.checkprojectProperty in project) {
-          item.checked = project[item.checkprojectProperty]
+        if (item.type === 'checkbox' && utils.isNEString(item.checkEditorProperty) && item.checkEditorProperty in editor) {
+          item.checked = editor[item.checkEditorProperty]
           item.enabled = true
         } else if (_.isFunction(item.check)) {
-          item.enabled = item.check(project) === true
+          item.enabled = item.check(editor) === true
         } else {
           item.enabled = true
         }

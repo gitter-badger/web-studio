@@ -1,5 +1,4 @@
 import { ipcRenderer } from 'electron'
-import url from 'url'
 import path from 'path'
 import _ from 'lodash'
 import Vue, { ComponentOptions } from 'vue'
@@ -10,7 +9,7 @@ import editorInspector from './ui/editor-inspector.vue'
 import editorInsert from './ui/editor-insert.vue'
 import './assets/elements.less'
 
-const pid = parseInt(url.parse(location.href, true).query.project, 10)
+interface EditorState extends Vue, EditorScope { }
 
 const template = `
 <div id="ws-app">
@@ -26,79 +25,53 @@ const defaultWeb = {
     title: null,
     pages: [],
     components: [],
-    extends: [],
+    extensions: [],
 }
 
-interface EditorState extends Vue, EditorScope { }
-
-function init() {
-    const projectRawProperty = ipcRenderer.sendSync('project-property', pid, ['meta', 'savePath', 'sideBarWidth', 'showSidebar', 'showInspector', 'previewMode', 'showLayers', 'edited', 'fullscreen'])
+function init(ediorId: number) {
+    const ediorState: any = {
+        savePath: undefined,
+        web: undefined,
+        currentWebObject: null,
+        selections: null,
+        edited: undefined,
+        showSidebar: undefined,
+        showInspector: undefined,
+        previewMode: undefined,
+        showLayers: undefined,
+        sideBarWidth: undefined,
+        windowWidth: window.innerWidth,
+        windowHeight: window.innerHeight,
+        fullscreen: undefined,
+        isMac: process.platform === 'darwin',
+    }
+    const editorProperties = []
     const $state = new Vue({
-        data: {
-            documentName: parseDocumentName(projectRawProperty.savePath),
-            web: _.assign({}, projectRawProperty.meta, defaultWeb),
-            currentWebObject: null,
-            selections: null,
-            edited: projectRawProperty.edited,
-            showSidebar: projectRawProperty.showSidebar,
-            showInspector: projectRawProperty.showInspector,
-            previewMode: projectRawProperty.previewMode,
-            showLayers: projectRawProperty.showLayers,
-            sideBarWidth: projectRawProperty.sideBarWidth,
-            windowWidth: window.innerWidth,
-            windowHeight: window.innerHeight,
-            fullscreen: projectRawProperty.fullscreen,
-            isMac: process.platform === 'darwin',
-        },
+        data: ediorState,
     }) as EditorState
+    const stateGetter: any = {
+        documentName: (): string => {
+            if (!_.isString($state.savePath) || $state.savePath === '') {
+                return 'Untitled.web'
+            }
+            return path.basename($state.savePath)
+        },
+    }
     let webWatcher: any = null
 
-    watchWeb()
-
-    window.addEventListener('resize', () => {
-        $state.windowWidth = window.innerWidth
-        $state.windowHeight = window.innerHeight
-    })
-
-    ipcRenderer.on('project-property', (e: Event, key: string, value: any) => {
-        switch (key) {
-            case 'showSidebar':
-            case 'showInspector':
-            case 'previewMode':
-            case 'fullscreen':
-                $state[key] = value as boolean
-                break
-            case 'meta':
-                unWatchWeb()
-                $state.web = _.assign({}, value, defaultWeb) as Web
-                watchWeb()
-                break
-            default:
+    for (let key in ediorState) {
+        if (ediorState[key] === undefined) {
+            editorProperties.push(key)
         }
-    })
+        stateGetter[key] = () => {
+            return $state[key]
+        }
+    }
 
-    ipcRenderer.on('saved', (savePath: string) => {
-        $state.documentName = parseDocumentName(savePath)
-        $state.edited = false
-    })
+    _.assign($state, ipcRenderer.sendSync('editor-property', ediorId, editorProperties))
 
     Vue.mixin({
-        computed: {
-            documentName: () => $state.documentName,
-            web: () => $state.web,
-            currentWebObject: () => $state.currentWebObject,
-            selections: () => $state.selections,
-            edited: () => $state.edited,
-            showSidebar: () => $state.showSidebar,
-            showInspector: () => $state.showInspector,
-            previewMode: () => $state.previewMode,
-            showLayers: () => $state.showLayers,
-            sideBarWidth: () => $state.sideBarWidth,
-            windowWidth: () => $state.windowWidth,
-            windowHeight: () => $state.windowHeight,
-            fullscreen: () => $state.fullscreen,
-            isMac: () => $state.isMac,
-        },
+        computed: stateGetter,
         methods: {
             $press(): void {
                 console.log('press')
@@ -121,10 +94,10 @@ function init() {
             $showLayers(type: string): void {
                 if ($state.showLayers !== type) {
                     $state.showLayers = type
-                    ipcRenderer.send('project-property', pid, { showLayers: type })
+                    ipcRenderer.send('editor-property', ediorId, { showLayers: type })
                 }
             },
-            $alterSiderBarWidth(n: number): void {
+            $alterSideBarWidth(n: number): void {
                 let width = $state.sideBarWidth + n
 
                 if (width < 180) {
@@ -139,17 +112,46 @@ function init() {
             $noRecordUpdateWeb(object: any, key: string, value: any): void {
                 unWatchWeb()
                 Vue.set(object, key, value)
-                ipcRenderer.send('project-property', pid, { meta: $state.web }, true)
                 $state.edited = true
+                ipcRenderer.send('editor-property', ediorId, { web: $state.web }, true)
                 watchWeb()
             },
         },
     })
 
+    window.addEventListener('resize', () => {
+        $state.windowWidth = window.innerWidth
+        $state.windowHeight = window.innerHeight
+    })
+
+    ipcRenderer.on('editor-property', (e: Event, key: string, value: any) => {
+        switch (key) {
+            case 'showSidebar':
+            case 'showInspector':
+            case 'previewMode':
+            case 'fullscreen':
+                $state[key] = value as boolean
+                break
+            case 'web':
+                unWatchWeb()
+                $state.web = _.assign({}, defaultWeb, value) as Web
+                watchWeb()
+                break
+            default:
+        }
+    })
+
+    ipcRenderer.on('saved', (savePath: string) => {
+        $state.savePath = savePath
+        $state.edited = false
+    })
+
+    watchWeb()
+
     function watchWeb() {
         webWatcher = $state.$watch('web', (web: Web) => {
-            ipcRenderer.send('project-property', pid, { meta: web })
             $state.edited = true
+            ipcRenderer.send('editor-property', ediorId, { web })
         }, { deep: true })
     }
 
@@ -159,17 +161,10 @@ function init() {
             webWatcher = null
         }
     }
-
-    function parseDocumentName(savePath: string): string {
-        if (!_.isString(savePath) || savePath === '') {
-            return 'Untitled.web'
-        }
-        return path.basename(savePath)
-    }
 }
 
-export default (): Vue => {
-    init()
+export default (editorId: number): Vue => {
+    init(editorId)
 
     return new Vue({
         el: '#app',
