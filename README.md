@@ -1,4 +1,4 @@
-<p align="center"><a href="http://ws.x-stud.io" target="_blank"><img width="80" src="http://static.x-stud.io/ws/ws-logo.png"></a></p>
+<p align="center"><a href="http://ws.x-stud.io" target="_blank"><img width="80" src="http://static.x-stud.io/ws/ws-logo.png?v2"></a></p>
 
 <p align="center">
   <a href="https://travis-ci.org/ije/web-studio"><img src="https://img.shields.io/travis/ije/web-studio/master.svg" alt="travis"></a>
@@ -12,7 +12,7 @@ Web Studio is a free tool for designing and pressing website without coding. Cor
 - Animation system
 - Page router
 - Component system
-- Extend system
-- Press project to different platform
+- Extends system
+- Press project to different platforms
 
 Web Studio can run in Windows, Mac and Linux
