@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'ws-icons';
-  src: url('./ws-icons.woff2') format('woff');
+  src: url('./ws-icons.ttf') format('woff');
   font-weight: normal;
   font-style: normal;
 }
@@ -32,9 +32,12 @@
 .icon-press:before {
   content: "\e903";
 }
-.icon-arrow-collapse:before {
+.icon-plus-small:before {
   content: "\e904";
 }
-.icon-arrow-expand:before {
+.icon-arrow-collapse:before {
   content: "\e905";
+}
+.icon-arrow-expand:before {
+  content: "\e906";
 }
