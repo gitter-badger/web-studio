@@ -1,5 +1,5 @@
 .DS_Store
 *.log
 node_modules/
-app/dist/
+dist/
 app/package-lock.json
