@@ -5,14 +5,15 @@ declare module '*.vue' {
 
 declare interface EditorScope {
     documentName: string
+    savePath: string
     web: Web
-    currentWebObject: Web | WebPage | WebComponent
+    currentWebObject: WebPage | WebComponent
     selections: WebLayer[]
     edited: boolean
     showSidebar: boolean
     showInspector: boolean
     previewMode: boolean
-    showLayers: string
+    editTab: string
     sideBarWidth: number
     windowWidth: number
     windowHeight: number
@@ -22,73 +23,49 @@ declare interface EditorScope {
     $insert(type: string): void
     $align(direction: string): void
     $distribute(direction: string): void
-    $setSelections(sel: WebLayer | WebLayer[]): void
-    $appendSelections(sel: WebLayer | WebLayer[]): void
-    $showLayers(type: string): void
-    $alterSiderBarWidth(n: number): void
-}
-
-declare interface ElementPosition {
-    top: number
-    bottom: number
-    left: number
-    right: number
-}
-
-declare interface ElementColor {
-    r: number
-    g: number
-    b: number
-    a: number
-}
-
-declare interface ElementBorder {
-    style: string
-    tickness: number
-    color: ElementColor
-}
-
-declare interface WebElement extends ElementPosition {
-    position: string
-    width: number
-    height: number
-    float: string
-    margin: ElementPosition
-    padding: ElementPosition
-    border: ElementBorder
-    opacity: number
-    bgColor: ElementColor
-    rotate: number
+    $setSelections(sel: any, root: any): void
+    $appendSelections(sel: any, root: any): void
+    $setEditTab(type: string): void
+    $alterSideBarWidth(n: number): void
+    $addWebObject(): void
+    $removeWebObject(obj: any): void
+    $showPopupMenu(items: any[]): void
+    $setQuietly(object: any, key: string, value: any): void
 }
 
 declare interface Web {
-    title: string
+    name: string
     documentName: string
     pages: WebPage[]
     components: WebComponent[]
-    extends: Web[]
+    extensions: Web[]
     assetFiles: WebAssetFile[]
     meta: any
 }
 
 declare interface WebPage {
-    title: string
-    routeExp: string
+    id: string
+    name: string
     layers: WebLayer[]
+    routeExp: string
     meta: any
 }
 
-declare interface WebComponent extends WebLayer {
+declare interface WebComponent {
+    id: string
+    name: string
+    layers: WebLayer[]
     input: any
 }
 
-declare interface WebLayer extends WebElement {
-    title: string
+declare interface WebLayer  {
+    name: string
     type: string
     locked: boolean
     hidden: boolean
-    collapsed: boolean
-    children: WebLayer[]
+    style: any
+    collapsed?: boolean
+    layers?: WebLayer[]
 }
 
 declare interface WebAssetFile {
@@ -96,20 +73,20 @@ declare interface WebAssetFile {
     type: string
     size: number
     tempPath: string
-    meta: WebImageFile | WebAudioFile | WebVideoFile
+    meta: WebImageMeta | WebAudioMeta | WebVideoMeta
 }
 
-declare interface WebImageFile {
+declare interface WebImageMeta {
     width: number
     height: number
 }
 
-declare interface WebAudioFile {
+declare interface WebAudioMeta {
     duration: number
     bitrate: number
 }
 
-declare interface WebVideoFile {
+declare interface WebVideoMeta {
     width: number
     height: number
     duration: number
