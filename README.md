@@ -1,5 +1,4 @@
-<p align="center"><a href="http://ws.x-stud.io" target="_blank"><img width="80" src="http://static.x-stud.io/ws/ws-logo.png?v2"></a></p>
-
+<p align="center"><br><br><br><a href="http://ws.x-stud.io" target="_blank"><img width="80" src="http://static.x-stud.io/ws/ws-logo.png?v2"></a></p>
 <p align="center">
   <a href="https://travis-ci.org/ije/web-studio"><img src="https://img.shields.io/travis/ije/web-studio/master.svg" alt="travis"></a>
   <a href="https://ci.appveyor.com/project/ije/web-studio"><img src="https://ci.appveyor.com/api/projects/status/ymjgij74oqaqr0lb/branch/master?svg=true" alt="appveyor"></a>
@@ -21,6 +20,7 @@ Web Studio can run in Windows, Mac and Linux
 ## Install
 
 Download the latest version of Web Studio from the [official website](http://ws.x-stud.io) or the [releases](https://github.com/ije/web-studio/releases) page.
+(That is currently unavailable, because Web Studio is in development)
 
 
 ## Contribution
@@ -42,7 +42,7 @@ run Web Studio in development, app will reload automatically every time code cha
 $ npm start
 ```
 
-build app:
+build Web Studio, you'll see the binary in the `./dist` folder after command:
 ```bash
 $ npm run build
 ```
@@ -54,4 +54,4 @@ Please make sure to read the [Contributing Guide](./CONTRIBUTING.md) before maki
 
 Licensed under the [MIT](http://opensource.org/licenses/MIT) License.
 
-Copyright (c) 2017 Studio X.
+Copyright (c) 2017, Studio X
