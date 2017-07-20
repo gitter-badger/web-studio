@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { dialog, ipcRenderer, remote } from 'electron'
 import path from 'path'
 import _ from 'lodash'
 import Vue, { ComponentOptions } from 'vue'
@@ -22,10 +22,11 @@ const template = `
 `
 
 const defaultWeb = {
-    title: null,
+    name: null,
     pages: [],
     components: [],
     extensions: [],
+    assetFiles: []
 }
 
 function init(ediorId: number) {
@@ -34,11 +35,12 @@ function init(ediorId: number) {
         web: undefined,
         currentWebObject: null,
         selections: null,
+        saving: undefined,
         edited: undefined,
         showSidebar: undefined,
         showInspector: undefined,
         previewMode: undefined,
-        showLayers: undefined,
+        editTab: undefined,
         sideBarWidth: undefined,
         windowWidth: window.innerWidth,
         windowHeight: window.innerHeight,
@@ -57,18 +59,17 @@ function init(ediorId: number) {
             return path.basename($state.savePath)
         },
     }
+    let idIndex = 0
     let webWatcher: any = null
 
-    for (let key in ediorState) {
+    for (const key in ediorState) {
         if (ediorState[key] === undefined) {
             editorProperties.push(key)
         }
-        stateGetter[key] = () => {
-            return $state[key]
-        }
+        stateGetter[key] = () => ($state as any)[key]
     }
 
-    _.assign($state, ipcRenderer.sendSync('editor-property', ediorId, editorProperties))
+    _.assign($state, defaultWeb, ipcRenderer.sendSync('editor-property', ediorId, editorProperties))
 
     Vue.mixin({
         computed: stateGetter,
@@ -85,16 +86,16 @@ function init(ediorId: number) {
             $distribute(direction: string): void {
                 console.log(direction)
             },
-            $setSelections(sel: WebLayer | WebLayer[]): void {
+            $setSelections(sel: any, root: any): void {
                 console.log(sel)
             },
-            $appendSelections(sel: WebLayer | WebLayer[]): void {
+            $appendSelections(sel: any, root: any): void {
                 console.log(sel)
             },
-            $showLayers(type: string): void {
-                if ($state.showLayers !== type) {
-                    $state.showLayers = type
-                    ipcRenderer.send('editor-property', ediorId, { showLayers: type })
+            $setEditTab(tab: string): void {
+                if ($state.editTab !== tab) {
+                    $state.editTab = tab
+                    ipcRenderer.send('editor-property', ediorId, { editTab: tab })
                 }
             },
             $alterSideBarWidth(n: number): void {
@@ -109,14 +110,85 @@ function init(ediorId: number) {
                 ipcRenderer.send('app-storage', 'sideBarWidth', width)
                 $state.sideBarWidth = width
             },
-            $noRecordUpdateWeb(object: any, key: string, value: any): void {
+            $addWebObject(): void {
+                let root = ($state.web as any)[$state.editTab]
+                if (!_.isArray(root)) {
+                    root = []
+                    Vue.set($state.web, $state.editTab, root)
+                }
+
+                switch ($state.editTab) {
+                    case 'pages':
+                        $state.web.pages.unshift(_.assign({ layers: [], routeExp: '', meta: {} }, newIdWithName('Page', root)))
+                        break
+                    case 'components':
+                        $state.web.components.unshift(_.assign({ layers: [], input: null }, newIdWithName('Component', root)))
+                        break
+                    case 'extensions':
+                        ipcRenderer.send('add-web-extensions', ediorId)
+                        break
+                }
+            },
+            $removeWebObject(obj: any): void {
+                const layers = ($state.web as any)[$state.editTab]
+                if (!_.isArray(layers)) {
+                    return
+                }
+
+                let deleteIndex = -1
+
+                _.each(layers, (item: any, i: number): any => {
+                    if (item === obj) {
+                        deleteIndex = i
+                        return false
+                    }
+                })
+
+                if (confirm('Delete ' + obj.name + '?')) {
+                    layers.splice(deleteIndex, 1)
+                }
+            },
+            $setQuietly(obj: any, key: string, value: any): void {
                 unWatchWeb()
-                Vue.set(object, key, value)
+                Vue.set(obj, key, value)
+                watchWeb()
                 $state.edited = true
                 ipcRenderer.send('editor-property', ediorId, { web: $state.web }, true)
-                watchWeb()
             },
-        },
+            $showPopupMenu(items: any[]): void {
+                if (!_.isArray(items) || items.length === 0) {
+                    return
+                }
+
+                const vm = this as any
+                const menu = new remote.Menu()
+
+                _.each(items, (item: any) => {
+                    item.click = () => {
+                        let callback: any
+                        let args: any[]
+
+                        if (_.isFunction(item.callback)) {
+                            callback = item.callback
+                        } else if (_.isString(item.callback) && item.callback in vm && _.isFunction(vm[item.callback])) {
+                            callback = vm[item.callback]
+                        }
+
+                        if (_.isArray(item.arguments)) {
+                            args = item.arguments
+                        } else {
+                            args = [item.arguments]
+                        }
+
+                        if (callback) {
+                            callback.apply(vm, args)
+                        }
+                    }
+                })
+
+                remote.Menu.buildFromTemplate(items as any).popup(remote.getCurrentWindow())
+            }
+        }
     })
 
     window.addEventListener('resize', () => {
@@ -134,14 +206,15 @@ function init(ediorId: number) {
                 break
             case 'web':
                 unWatchWeb()
-                $state.web = _.assign({}, defaultWeb, value) as Web
+                $state.web = value
+                // todo: parse $state.web and value to improve performance
                 watchWeb()
                 break
             default:
         }
     })
 
-    ipcRenderer.on('saved', (savePath: string) => {
+    ipcRenderer.on('saved', (e: Event, savePath: string) => {
         $state.savePath = savePath
         $state.edited = false
     })
@@ -161,6 +234,21 @@ function init(ediorId: number) {
             webWatcher = null
         }
     }
+
+    function newIdWithName(prefix: string, container: any[], index: number = 1): any {
+        const name = prefix + ' ' + index
+
+        if (_.findIndex(container, (o) => o && o.name === name) >= 0) {
+            return newIdWithName(prefix, container, index + 1)
+        }
+
+        const id = prefix.toLocaleLowerCase() + '-' + (++idIndex)
+        if (_.findIndex(container, (o) => o && o.id === id) >= 0) {
+            return newIdWithName(prefix, container, index)
+        }
+
+        return { id, name }
+    }
 }
 
 export default (editorId: number): Vue => {
@@ -176,6 +264,6 @@ export default (editorId: number): Vue => {
             editorSideBar,
             editorInspector,
             editorInsert,
-        },
+        }
     })
 }
