@@ -16,3 +16,39 @@ Web Studio is a free tool for designing and pressing website without coding. Cor
 - Press project to different platforms
 
 Web Studio can run in Windows, Mac and Linux
+
+
+## Install
+
+Download the latest version of WebTorrent Desktop from the [official website ](http://ws.x-stud.io) or the [GitHub releases](https://github.com/webtorrent/webtorrent-desktop/releases) page.
+
+
+## Contribution
+
+get the code and install the development dependencies
+```bash
+$ git clone https://github.com/ije/web-studio.git
+$ cd web-studio
+$ npm install
+```
+
+run test
+```bash
+$ npm test
+```
+
+run Web Studio in development, app will reload automatically every time code changes
+```bash
+$ npm start
+```
+
+build app
+```bash
+$ npm run build
+```
+
+
+## License
+
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the [MIT](http://opensource.org/licenses/MIT) License.
