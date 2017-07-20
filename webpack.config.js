@@ -32,7 +32,7 @@ module.exports = {
         use: ['style-loader', 'css-loader', 'less-loader']
       },
       {
-        test: /\.(jpe?g|png|gif|svg|woff2?)$/i,
+        test: /\.(jpe?g|png|gif|svg|ttf|woff2?)$/i,
         use: 'url-loader?limit=8192&name=assets/[name].[ext]?[hash]'
       }
     ]
