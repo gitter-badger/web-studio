@@ -1,7 +1,7 @@
 const {app} = require('electron')
 const path = require('path')
 const fs = require('fs')
-const utils = require('./x/utils')
+const utils = require('./utils')
 const storageSavePath = path.join(app.getPath('userData'), 'storage.json')
 
 let storage = {}

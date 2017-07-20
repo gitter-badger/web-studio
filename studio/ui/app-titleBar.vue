@@ -22,7 +22,6 @@
         width: 100%;
         height: 36px;
         background-color: rgba(255, 255, 255, 0.9);
-        user-select: none;
         -webkit-app-region: drag;
     }
    
@@ -36,7 +35,6 @@
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        user-select: none;
         -webkit-app-region: drag;
     }
 </style>

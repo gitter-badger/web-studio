@@ -22,9 +22,6 @@ const applicationMenu = {
   emojis: isMac ? 'Ctrl+Cmd+Space' : '',
 
   // View menu
-  reload: 'R',
-  fullReload: 'Shift+R',
-  toggleDevTools: isMac ? 'Alt+I' : 'Shift+I',
   resetZoom: '0',
   zoomIn: 'plus',
   zoomOut: '-',

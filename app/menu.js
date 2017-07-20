@@ -1,11 +1,11 @@
-const {app, Menu, shell, dialog} = require('electron')
+const { app, Menu, shell, dialog } = require('electron')
 const os = require('os')
 const path = require('path')
 const _ = require('lodash')
 const storage = require('./storage')
-const {accelerators} = require('./accelerators')
+const { accelerators } = require('./accelerators')
 const studio = require('./studio')
-const utils = require('./x/utils')
+const utils = require('./utils')
 const appVersion = app.getVersion()
 
 let recentFiles = []
@@ -29,10 +29,9 @@ let fileMenu = {
       accelerator: accelerators.open,
       click () {
         dialog.showOpenDialog({
-          multiSelections: false,
+          properties: ['openFile'],
           filters: [
-            {name: 'Web Project Document', extensions: ['web']},
-            {name: 'All Files', extensions: ['*']}
+            { name: 'Web Project Document', extensions: ['web'] }
           ]
         }, function (filePaths) {
           if (utils.isNEArray(filePaths)) {
@@ -308,7 +307,7 @@ if (process.platform === 'darwin') {
   })
 
   editMenu.submenu.push(
-    {type: 'separator'},
+    { type: 'separator' },
     {
       label: 'Preferences...',
       accelerator: accelerators.preferences,
@@ -399,18 +398,17 @@ function clearRecentFiles () {
   updateMenu()
 }
 
-function update (editor) {
+function enable (editor) {
   _.each(appMenuList, (menu) => {
     _.each(menu.submenu, (item) => {
       if ('enabled' in item) {
+        let enabled = true
         if (item.type === 'checkbox' && utils.isNEString(item.checkEditorProperty) && item.checkEditorProperty in editor) {
           item.checked = editor[item.checkEditorProperty]
-          item.enabled = true
         } else if (_.isFunction(item.check)) {
-          item.enabled = item.check(editor) === true
-        } else {
-          item.enabled = true
+          enabled = item.check(editor) === true
         }
+        item.enabled = enabled
       }
     })
   })
@@ -421,10 +419,10 @@ function disable () {
   _.each(appMenuList, (menu) => {
     _.each(menu.submenu, (item) => {
       if ('enabled' in item) {
-        item.enabled = false
         if (item.type === 'checkbox') {
           item.checked = false
         }
+        item.enabled = false
       }
     })
   })
@@ -443,6 +441,6 @@ module.exports = {
   addRecentFile,
   removeRecentFile,
   clearRecentFiles,
-  update,
+  enable,
   disable
 }

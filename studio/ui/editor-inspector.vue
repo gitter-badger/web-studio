@@ -1,6 +1,5 @@
 <template>
     <div id="editor-inspector">
-        inspector
     </div>
 </template>
 
@@ -8,7 +7,6 @@
     import Vue, { ComponentOptions } from 'vue'
 
     export default {
-        props: ['selection'],
         data() {
             return {}
         }
@@ -17,6 +15,11 @@
 
 <style lang="less">
     #editor-inspector {
-        width: 100%;
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 270px;
+        height: 100%;
+        background-color: #e7e7e7;
     }
 </style>

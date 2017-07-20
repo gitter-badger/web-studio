@@ -1,9 +1,7 @@
 <template>
-     <div :style="[showLayers ? {width: windowWidth - leftAsideWidth + 'px', left: leftAsideWidth + 'px'} : null]" id="editor-title-bar">
-        <div :class="{center: !showLayers}" id="editor-title">
-            <span>{{documentTitle}}</span>
-            <em v-if="page">/{{page.routeExp}}</em>
-            <span v-if="edited">— Edited</span>
+    <div :style="[editTab ? {width: windowWidth - sideBarWidth + 'px', left: sideBarWidth + 'px'} : null]" id="editor-title-bar" v-show="!fullscreen">
+        <div :class="{center: !editTab}" class="title">
+            <span v-if="currentWebObject">{{currentWebObject.name}}</span>
         </div>
     </div>
 </template>
@@ -12,7 +10,6 @@
     import Vue, { ComponentOptions } from 'vue'
 
     export default {
-        props: ['documentTitle', 'page', 'edited'],
         data() {
             return {}
         }
@@ -26,26 +23,23 @@
         left: 0;
         width: 100%;
         height: 36px;
-        background-color: rgba(255, 255, 255, 0.9);
-        user-select: none;
-        -webkit-app-region: drag;
-    }
-   
-    #editor-title {
-        margin-left: 12px;
-        width: 60%;
-        height: 36px;
-        font-size: 12px;
-        line-height: 36px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        user-select: none;
+        border-bottom: 1px solid #e7e7e7;
+        background-color: rgba(249, 249, 249, 0.9);
         -webkit-app-region: drag;
 
-        &.center {
-            margin-left: 20%;
-            text-align: center;
+        .title {
+            margin-left: 12px;
+            width: 60%;
+            height: 36px;
+            font-size: 12px;
+            line-height: 36px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            Í &.center {
+                margin-left: 20%;
+                text-align: center;
+            }
         }
     }
 </style>

@@ -3,7 +3,7 @@ const dev = require('./dev')
 const menu = require('./menu')
 const storage = require('./storage')
 const studio = require('./studio')
-const htmlpdf = require('./x/htmlpdf')
+const htmlpdf = require('./htmlpdf')
 const { default: installExtension, VUEJS_DEVTOOLS } = require('electron-devtools-installer')
 
 global.env = {
@@ -58,7 +58,7 @@ app.on('ready', () => {
 // On macOS it's common to re-create a window in the app
 // when the dock icon is clicked and there are no other windows open.
 app.on('activate', () => {
-  studio.init()
+  studio.welcome()
 })
 
 app.on('window-all-closed', () => {
