@@ -5,7 +5,7 @@ const async = require('async')
 const _ = require('lodash')
 const dev = require('./dev')
 const storage = require('./storage')
-const utils = require('./x/utils')
+const utils = require('./utils')
 
 let editors = new Map()
 let currentEditor = null
@@ -17,17 +17,18 @@ class Editor {
     this.id = id
     this.bw = bw
     this.savePath = savePath
-    this.web = Object.assign({
-      assetFiles: [],
-      title: null,
+    this.web = _.assign({
+      name: null,
       pages: [],
       components: [],
-      extensions: []
+      extensions: [],
+      idIndex: {},
+      assetFiles: []
     }, web)
     this.sideBarWidth = storage.get('sideBarWidth', 300)
     this.showSidebar = storage.get('showSidebar', true)
     this.showInspector = storage.get('showInspector', true)
-    this.showLayers = 'pages'
+    this.editTab = 'pages'
     this.previewMode = false
     this.edited = false
     this.editHistory = [this.web]
@@ -47,31 +48,56 @@ class Editor {
   }
 
   undo () {
-    console.log('undo')
+    if (this.editHistoryPointer <= 0) {
+      return
+    }
+
+    const web = this.editHistory[--this.editHistoryPointer]
+    if (web) {
+      this.setBoth('web', web)
+      this.updateMenu()
+    }
   }
 
   redo () {
-    console.log('redo')
+    if (this.editHistoryPointer >= this.editHistory.length - 1) {
+      return
+    }
+
+    const web = this.editHistory[++this.editHistoryPointer]
+    if (web) {
+      this.setBoth('web', web)
+      this.updateMenu()
+    }
+  }
+
+  updateMenu () {
+    let menu = this._menu
+    if (!menu) {
+      menu = this._menu = require('./menu')
+    }
+    menu.enable(this)
   }
 
   save (as) {
     const _self = this
-    let newPath = this.savePath
+    let savePath = this.savePath
 
-    if (!newPath || !!as) {
-      newPath = dialog.showSaveDialog(this.bw, {
-        defaultPath: this.savePath,
+    if (!savePath || !!as) {
+      savePath = dialog.showSaveDialog(_self.bw, {
+        defaultPath: savePath,
+        properties: ['createDirectory'],
         filters: [
           { name: 'Web Project Document', extensions: ['web'] }
         ]
       })
-      if (!newPath) {
+      if (!savePath) {
         return
       }
     }
 
     openFile(
-      newPath,
+      savePath,
       'w+',
       (fd, done) => {
         let buf = Buffer.from('WS\0\0\0\0')
@@ -91,10 +117,10 @@ class Editor {
             return
           }
 
-          _self.savePath = newPath
+          _self.savePath = savePath
           _self.edited = false
-          _self.bw.setTitle(path.basename(newPath))
-          _self.send('saved', newPath)
+          _self.bw.setTitle(path.basename(savePath))
+          _self.send('saved', savePath)
           done()
         })
       }
@@ -114,66 +140,40 @@ class Editor {
   }
 }
 
-app.on('ready', () => {
-  const menu = require('./menu')
+// app.on('ready', () => {
+//   ipcMain.on('add-web-extensions', (e, id) => {
+//     const editor = editors.get(id)
 
-  ipcMain.on('app-storage', (e, key, value) => {
-    if (!utils.isNEString(key)) {
-      e.returnValue = null
-      return
-    }
+//     if (!editor) {
+//       e.returnValue = false
+//       return
+//     }
 
-    if (!_.isUndefined(value)) {
-      storage.set(key, value)
-      e.returnValue = true
-      return
-    }
+//     dialog.showOpenDialog(editor.bw, {
+//       properties: ['openFile', 'multiSelections'],
+//       filters: [
+//         { name: 'Web Project Document', extensions: ['web'] }
+//       ]
+//     }, function (filePaths) {
+//       console.log(filePaths)
+//     })
+//   })
 
-    e.returnValue = storage.get(key)
-  })
+//   ipcMain.on('app-storage', (e, key, value) => {
+//     if (!utils.isNEString(key)) {
+//       e.returnValue = null
+//       return
+//     }
 
-  ipcMain.on('editor-property', (e, id, v, noRecording) => {
-    const editor = editors.get(id)
+//     if (!_.isUndefined(value)) {
+//       storage.set(key, value)
+//       e.returnValue = true
+//       return
+//     }
 
-    if (!editor) {
-      e.returnValue = {}
-      return
-    }
-
-    if (utils.isNEString(v)) {
-      if (v in editor) {
-        e.returnValue = editor[v]
-      } else {
-        e.returnValue = null
-      }
-    } else if (_.isArray(v)) {
-      const returnValue = {}
-      _.each(v, function (key) {
-        if (utils.isNEString(key) && key in editor) {
-          returnValue[key] = editor[key]
-        }
-      })
-      e.returnValue = returnValue
-    } else if (_.isPlainObject(v)) {
-      _.each(v, (value, key) => {
-        if (key in editor) {
-          editor[key] = value
-        }
-        if (key === 'web') {
-          if (noRecording !== true) {
-            editor.editHistory.splice(editor.editHistoryPointer, editor.editHistory.length - 1 - editor.editHistoryPointer, editor.web)
-            editor.editHistoryPointer++
-          }
-          editor.edited = true
-          menu.update(editor)
-        }
-      })
-      e.returnValue = true
-    } else {
-      e.returnValue = false
-    }
-  })
-})
+//     e.returnValue = storage.get(key)
+//   })
+// })
 
 function openProjectFile (projectPath) {
   const menu = require('./menu')
@@ -214,7 +214,7 @@ function openProjectFile (projectPath) {
           return
         }
 
-        done(null, Object.assign(stats, { projectAssetNumber: buffer.readUInt32LE(2) }))
+        done(null, _.assign(stats, { projectAssetNumber: buffer.readUInt32LE(2) }))
       })
     },
     (fd, stats, done) => {
@@ -296,14 +296,17 @@ function openProject (projectPath, projectMeta) {
     editor.setBoth('fullscreen', false)
   })
 
-  menu.update(editor)
+  editor.updateMenu()
   editor.bw.on('focus', () => {
     currentEditor = editor
-    menu.update(editor)
+    editor.updateMenu()
   })
 
   editor.bw.on('closed', () => {
     editors.delete(editor.id)
+    if (editors.size === 0) {
+      welcome()
+    }
   })
 
   currentEditor = editor
@@ -315,16 +318,68 @@ function openProject (projectPath, projectMeta) {
 }
 
 function init (openFile) {
-  const menu = require('./menu')
+  ipcMain.on('editor-property', (e, id, v, noRecording) => {
+    const editor = editors.get(id)
+
+    if (!editor) {
+      e.returnValue = false
+      return
+    }
+
+    if (utils.isNEString(v)) {
+      if (v in editor) {
+        e.returnValue = editor[v]
+      } else {
+        e.returnValue = null
+      }
+    } else if (_.isArray(v)) {
+      const returnValue = {}
+      _.each(v, function (key) {
+        if (utils.isNEString(key) && key in editor) {
+          returnValue[key] = editor[key]
+        }
+      })
+      e.returnValue = returnValue
+    } else if (_.isPlainObject(v)) {
+      _.each(v, (value, key) => {
+        if (key in editor && typeof value === typeof editor[key] && value !== undefined) {
+          editor[key] = value
+
+          if (key === 'web') {
+            if (noRecording === true) {
+              editor.editHistory.splice(editor.editHistoryPointer, 1, value)
+            } else {
+              if (editor.editHistoryPointer < editor.editHistory.length - 1) {
+                editor.editHistory.splice(editor.editHistoryPointer + 1, editor.editHistory.length - (editor.editHistoryPointer + 1))
+              }
+              editor.editHistory.push(value)
+              editor.editHistoryPointer = editor.editHistory.length - 1
+            }
+            editor.edited = true
+            editor.updateMenu()
+          }
+        }
+      })
+      e.returnValue = true
+    } else {
+      e.returnValue = false
+    }
+  })
 
   if (utils.isNEString(openFile)) {
     openProjectFile(openFile)
     return
   }
 
+  welcome()
+}
+
+function welcome () {
   if (editors.size > 0 || welcomeWindow !== null) {
     return
   }
+
+  const menu = require('./menu')
 
   welcomeWindow = createWindow({
     urlArgs: {
@@ -511,6 +566,7 @@ function openFile (path, flags) {
 
 module.exports = {
   init,
+  welcome,
   config,
   open: openProjectFile,
   save (as) {
