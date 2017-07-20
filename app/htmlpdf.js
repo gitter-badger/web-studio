@@ -12,7 +12,7 @@ function createPDF (filepath, html, css, done) {
     }
 
     let vm = new BrowserWindow({
-      show: true,
+      show: false,
       webPreferences: {
         offscreen: true
       }
