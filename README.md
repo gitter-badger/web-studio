@@ -19,6 +19,8 @@ Web Studio can run in Windows, Mac and Linux
 
 ## Install
 
+[![Join the chat at https://gitter.im/ije/web-studio](https://badges.gitter.im/ije/web-studio.svg)](https://gitter.im/ije/web-studio?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Download the latest version of Web Studio from the [official website](http://ws.x-stud.io) or the [releases](https://github.com/ije/web-studio/releases) page.
 (That is currently unavailable, because Web Studio is in development)
 
