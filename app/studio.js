@@ -276,7 +276,8 @@ function openProject (projectPath, projectMeta) {
   const id = ++editorIndex
   editor = new Editor(id, projectPath, projectMeta, createWindow({
     urlArgs: {
-      editor: id
+      app: 'editor',
+      id: id
     },
     minWidth: 800,
     minHeight: 400,
@@ -383,7 +384,7 @@ function welcome () {
 
   welcomeWindow = createWindow({
     urlArgs: {
-      welcome: true
+      app: 'welcome'
     },
     width: 800,
     height: 400,
@@ -411,7 +412,7 @@ function config () {
 
   let preferencesWindow = createWindow({
     urlArgs: {
-      preferences: true
+      app: 'preferences'
     },
     width: 800,
     height: 400,

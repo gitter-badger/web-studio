@@ -2,11 +2,15 @@ const path = require('path')
 const webpack = require('webpack')
 
 module.exports = {
-  entry: './studio/main.ts',
+  entry: {
+    editor: './studio/editor.ts',
+    welcome: './studio/welcome.ts',
+    preferences: './studio/preferences.ts'
+  },
   output: {
     path: path.resolve(__dirname, './app/dist'),
     publicPath: '/app/dist/',
-    filename: 'bundle.js'
+    filename: '[name].bundle.js'
   },
   target: 'electron-renderer',
   module: {
@@ -28,7 +32,7 @@ module.exports = {
         }
       },
       {
-        test: /\.less$/i,
+        test: /\.(css|less)$/i,
         use: ['style-loader', 'css-loader', 'less-loader']
       },
       {
@@ -64,6 +68,7 @@ if (process.env.NODE_ENV === 'production') {
         NODE_ENV: '"production"'
       }
     }),
+    new webpack.optimize.ModuleConcatenationPlugin(),
     new webpack.optimize.UglifyJsPlugin({
       sourceMap: true,
       compress: {
@@ -73,6 +78,6 @@ if (process.env.NODE_ENV === 'production') {
     new webpack.LoaderOptionsPlugin({
       minimize: true
     }),
-    new webpack.BannerPlugin('Copyright studio X')
+    new webpack.BannerPlugin('Copyright (c) 2017, Studio X')
   ])
 }

@@ -8,18 +8,16 @@ const template = `
 </div>
 `
 
-export default (): Vue => {
-    return new Vue({
-        el: '#app',
-        name: 'web-studio-preferences',
-        template,
-        components: {
-            appTitleBar,
-        },
-        data() {
-            return {
-                msg: 'preferences...',
-            }
-        },
-    })
-}
+export default new Vue({
+    el: '#app',
+    name: 'web-studio-preferences',
+    template,
+    components: {
+        appTitleBar,
+    },
+    data() {
+        return {
+            msg: 'preferences...',
+        }
+    },
+})

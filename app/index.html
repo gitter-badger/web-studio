@@ -41,9 +41,13 @@
 <body>
   <div id="app">loading...</div>
   <script>
-    start = performance.now()
+    {
+      const app = require('url').parse(window.location.href, true).query.app
+      const el = document.createElement('script')
+      el.src = `./dist/${app}.bundle.js`
+      document.body.appendChild(el)
+    }
   </script>
-  <script src="./dist/bundle.js"></script>
 </body>
 
 </html>

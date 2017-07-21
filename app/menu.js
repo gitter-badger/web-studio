@@ -197,7 +197,7 @@ let helpMenu = {
       }
     },
     {
-      label: 'Created by studio X',
+      label: 'Created by Studio X',
       click () {
         shell.openExternal('http://x-stud.io')
       }

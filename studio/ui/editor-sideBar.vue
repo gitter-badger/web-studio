@@ -5,7 +5,7 @@
         <div id="project-title" :style="{top: (fullscreen ? 18 : 48) + 'px'}">
             <div class="icon" :style="{borderColor: '#fff'}"></div>
             <div class="title">
-                <span>{{web.title || documentName}}</span>
+                <span>{{web.name || documentName}}</span>
                 <em v-if="edited"> &nbsp;—&nbsp; Edited</em>
                 <em v-if="saving"> &nbsp;—&nbsp; Saving &middot;&middot;&middot;</em>
             </div>
